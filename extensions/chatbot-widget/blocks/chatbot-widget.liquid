@@ -1,0 +1,300 @@
+{{ 'chatbot-widget.css' | asset_url | stylesheet_tag }}
+
+<div
+  class="chatbot-widget-app chatbot-position-{{ block.settings.widget_position }}"
+  data-chatbot-widget
+  {% if block.settings.use_default_theme %}
+  style="
+    --chatbot-toggle-bg: #111111;
+    --chatbot-toggle-icon: #FFFFFF;
+    --chatbot-header-bg: #111111;
+    --chatbot-header-text: #FFFFFF;
+    --chatbot-card-bg: #FFFFFF;
+    --chatbot-body-bg: #F5F5F5;
+    --chatbot-bot-bubble-bg: #F0F0F0;
+    --chatbot-bot-bubble-text: #111111;
+    --chatbot-user-bubble-bg: #111111;
+    --chatbot-user-bubble-text: #FFFFFF;
+    --chatbot-input-bg: #FFFFFF;
+    --chatbot-input-text: #111111;
+    --chatbot-input-border: #E0E0E0;
+    --chatbot-send-bg: #111111;
+    --chatbot-send-icon: #FFFFFF;
+    --chatbot-border: #E0E0E0;
+    --chatbot-radius: 16px;
+  "
+  {% else %}
+  style="
+    --chatbot-toggle-bg: {{ block.settings.toggle_button_bg_color }};
+    --chatbot-toggle-icon: {{ block.settings.toggle_button_icon_color }};
+    --chatbot-header-bg: {{ block.settings.header_bg_color }};
+    --chatbot-header-text: {{ block.settings.header_text_color }};
+    --chatbot-card-bg: {{ block.settings.widget_bg_color }};
+    --chatbot-body-bg: {{ block.settings.body_bg_color }};
+    --chatbot-bot-bubble-bg: {{ block.settings.bot_bubble_bg_color }};
+    --chatbot-bot-bubble-text: {{ block.settings.bot_bubble_text_color }};
+    --chatbot-user-bubble-bg: {{ block.settings.user_bubble_bg_color }};
+    --chatbot-user-bubble-text: {{ block.settings.user_bubble_text_color }};
+    --chatbot-input-bg: {{ block.settings.input_bg_color }};
+    --chatbot-input-text: {{ block.settings.input_text_color }};
+    --chatbot-input-border: {{ block.settings.input_border_color }};
+    --chatbot-send-bg: {{ block.settings.send_button_bg_color }};
+    --chatbot-send-icon: {{ block.settings.send_button_icon_color }};
+    --chatbot-border: {{ block.settings.widget_border_color }};
+    --chatbot-radius: {{ block.settings.corner_radius }}px;
+  "
+  {% endif %}
+  {% if block.settings.start_open %}data-start-open="true"{% endif %}
+>
+
+  {%- comment -%} Floating toggle button {%- endcomment -%}
+  <button type="button" class="chatbot-toggle-btn" data-chatbot-toggle aria-label="Open chat" aria-expanded="false">
+    <svg class="chatbot-icon-chat" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M12 3C6.99 3 3 6.58 3 11c0 2.27 1.07 4.31 2.78 5.78L5 21l4.21-1.42c.87.23 1.8.36 2.79.36 5.01 0 9-3.58 9-8s-3.99-8-9-8z"/>
+    </svg>
+    <svg class="chatbot-icon-close" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.9 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.9a1 1 0 0 0 1.41-1.41L13.41 12l4.9-4.89a1 1 0 0 0 0-1.4z"/>
+    </svg>
+  </button>
+
+  {%- comment -%} Chat window {%- endcomment -%}
+  <div class="chatbot-window" data-chatbot-window role="dialog" aria-label="{{ block.settings.header_title }}" aria-hidden="true">
+
+    {%- comment -%} Header — avatar + title/subtitle, no close button {%- endcomment -%}
+    <div class="chatbot-header">
+      <div class="chatbot-avatar" aria-hidden="true">
+        {%- if block.settings.avatar_image != blank -%}
+          <img
+            src="{{ block.settings.avatar_image | image_url: width: 80 }}"
+            alt="{{ block.settings.header_title }}"
+            width="40"
+            height="40"
+            loading="lazy"
+          >
+        {%- else -%}
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 3C6.99 3 3 6.58 3 11c0 2.27 1.07 4.31 2.78 5.78L5 21l4.21-1.42c.87.23 1.8.36 2.79.36 5.01 0 9-3.58 9-8s-3.99-8-9-8z"/>
+          </svg>
+        {%- endif -%}
+      </div>
+      <div class="chatbot-header-info">
+        <span class="chatbot-header-title">{{ block.settings.header_title }}</span>
+        {%- if block.settings.header_subtitle != blank -%}
+          <span class="chatbot-header-subtitle">{{ block.settings.header_subtitle }}</span>
+        {%- endif -%}
+      </div>
+    </div>
+
+    {%- comment -%} Messages area {%- endcomment -%}
+    <div class="chatbot-body">
+      <div class="chatbot-message chatbot-message-bot">
+        <div class="chatbot-bubble">{{ block.settings.welcome_message }}</div>
+      </div>
+    </div>
+
+    {%- comment -%} Footer: input + send {%- endcomment -%}
+    <div class="chatbot-footer">
+      <input
+        type="text"
+        class="chatbot-input"
+        placeholder="{{ block.settings.input_placeholder }}"
+        aria-label="Type a message"
+      >
+      <button type="button" class="chatbot-send-btn" aria-label="Send message">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ 'chatbot-widget.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Chat Widget",
+  "target": "body",
+  "settings": [
+    {
+      "type": "text",
+      "id": "header_title",
+      "label": "Header title",
+      "default": "Chat with us"
+    },
+    {
+      "type": "text",
+      "id": "header_subtitle",
+      "label": "Header subtitle",
+      "default": "We usually reply within a few minutes"
+    },
+    {
+      "type": "text",
+      "id": "welcome_message",
+      "label": "Welcome message",
+      "default": "Hi there! 👋 How can we help you today?"
+    },
+    {
+      "type": "text",
+      "id": "input_placeholder",
+      "label": "Input placeholder",
+      "default": "Type your message..."
+    },
+    {
+      "type": "image_picker",
+      "id": "avatar_image",
+      "label": "Avatar image",
+      "info": "Rounded avatar in the chat header. Leave blank for default icon."
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "widget_position",
+      "label": "Widget position",
+      "options": [
+        { "value": "bottom_right", "label": "Bottom right" },
+        { "value": "bottom_left", "label": "Bottom left" }
+      ],
+      "default": "bottom_right"
+    },
+    {
+      "type": "range",
+      "id": "corner_radius",
+      "label": "Corner radius",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "checkbox",
+      "id": "start_open",
+      "label": "Open chat window by default",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Toggle button & header"
+    },
+    {
+      "type": "color",
+      "id": "toggle_button_bg_color",
+      "label": "Toggle button background",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "toggle_button_icon_color",
+      "label": "Toggle button icon",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "header_bg_color",
+      "label": "Header background",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "header_text_color",
+      "label": "Header text",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "header",
+      "content": "Chat window"
+    },
+    {
+      "type": "color",
+      "id": "widget_bg_color",
+      "label": "Card background",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "body_bg_color",
+      "label": "Messages area background",
+      "default": "#F5F5F5"
+    },
+    {
+      "type": "color",
+      "id": "widget_border_color",
+      "label": "Card border",
+      "default": "#E0E0E0"
+    },
+    {
+      "type": "color",
+      "id": "bot_bubble_bg_color",
+      "label": "Bot bubble background",
+      "default": "#F0F0F0"
+    },
+    {
+      "type": "color",
+      "id": "bot_bubble_text_color",
+      "label": "Bot bubble text",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "user_bubble_bg_color",
+      "label": "User bubble background",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "user_bubble_text_color",
+      "label": "User bubble text",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "header",
+      "content": "Input & send button"
+    },
+    {
+      "type": "color",
+      "id": "input_bg_color",
+      "label": "Input background",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "input_text_color",
+      "label": "Input text",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "input_border_color",
+      "label": "Input border",
+      "default": "#E0E0E0"
+    },
+    {
+      "type": "color",
+      "id": "send_button_bg_color",
+      "label": "Send button background",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "send_button_icon_color",
+      "label": "Send button icon",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "header",
+      "content": "Reset theme"
+    },
+    {
+      "type": "checkbox",
+      "id": "use_default_theme",
+      "label": "Reset to default theme on save",
+      "default": false,
+      "info": "Check, save, then uncheck to restore all color defaults."
+    }
+  ]
+}
+{% endschema %}
