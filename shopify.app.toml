@@ -9,6 +9,11 @@ name = "chatbot"
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_orders,write_products"
 
+[app_proxy]
+url = "https://chatbot-backend.kiz.app"
+subpath = "ai-chatbot"
+prefix = "apps"
+
 [product.metafields.app.demo_info]
 type = "single_line_text_field"
 name = "Demo Source Info"
