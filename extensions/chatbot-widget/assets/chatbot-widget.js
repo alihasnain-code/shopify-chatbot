@@ -402,7 +402,7 @@
 
         this.shop = root.dataset.shop || window.location.hostname;
 
-        var AI_CHATBOT_API_BASE = "/apps/ai-chatbot";
+        var AI_CHATBOT_API_BASE = "/apps/ai-chatbot/api/v1";
 
         this.apiBase = AI_CHATBOT_API_BASE;
         this.storage = new AIChatbotStorage(this.shop);
