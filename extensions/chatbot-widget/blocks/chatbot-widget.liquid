@@ -12,15 +12,20 @@
 {%- liquid
   assign is_reset = block.settings.reset_to_default
 
+  # Behavior & content are always live — the reset toggle never hides these,
+  # so merchants can keep editing chat mode, position, and copy at any time.
+  assign chat_mode = block.settings.chat_mode
+  assign position = block.settings.position
+  assign start_open = block.settings.start_open
+  assign enable_expand = block.settings.enable_expand
+  assign chat_title = block.settings.chat_title | default: 'Chat with us'
+  assign subtitle = block.settings.subtitle
+  assign welcome_message = block.settings.welcome_message | default: 'Hi there! How can I help you today?'
+  assign placeholder_text = block.settings.placeholder_text | default: 'Type a message...'
+  assign custom_css_class = block.settings.custom_css_class
+
+  # Only appearance settings are affected by "Reset appearance to default".
   if is_reset
-    assign chat_mode = 'widget'
-    assign position = 'bottom-right'
-    assign start_open = false
-    assign enable_expand = true
-    assign chat_title = 'Chat with us'
-    assign subtitle = 'We typically reply instantly'
-    assign welcome_message = 'Hi there! How can I help you today?'
-    assign placeholder_text = 'Type a message...'
     assign bot_avatar = blank
     assign launcher_icon = blank
     assign accent_color = '#111111'
@@ -29,16 +34,7 @@
     assign border_radius = 16
     assign widget_width = 380
     assign widget_height = 600
-    assign custom_css_class = blank
   else
-    assign chat_mode = block.settings.chat_mode
-    assign position = block.settings.position
-    assign start_open = block.settings.start_open
-    assign enable_expand = block.settings.enable_expand
-    assign chat_title = block.settings.chat_title | default: 'Chat with us'
-    assign subtitle = block.settings.subtitle
-    assign welcome_message = block.settings.welcome_message | default: 'Hi there! How can I help you today?'
-    assign placeholder_text = block.settings.placeholder_text | default: 'Type a message...'
     assign bot_avatar = block.settings.bot_avatar
     assign launcher_icon = block.settings.launcher_icon
     assign accent_color = block.settings.accent_color
@@ -47,7 +43,6 @@
     assign border_radius = block.settings.border_radius
     assign widget_width = block.settings.widget_width
     assign widget_height = block.settings.widget_height
-    assign custom_css_class = block.settings.custom_css_class
   endif
 -%}
 
@@ -56,8 +51,8 @@
   class="ai-chatbot ai-chatbot--{{ chat_mode }} ai-chatbot--{{ position }}{% if custom_css_class != blank %} {{ custom_css_class }}{% endif %}"
   data-chat-mode="{{ chat_mode }}"
   data-position="{{ position }}"
-  data-start-open="{{ block.settings.start_open }}"
-  data-enable-expand="{{ block.settings.enable_expand }}"
+  data-start-open="{{ start_open }}"
+  data-enable-expand="{{ enable_expand }}"
   data-placeholder="{{ placeholder_text | escape }}"
   data-welcome-message="{{ welcome_message | escape }}"
   data-shop="{{ shop.permanent_domain }}"
@@ -83,8 +78,8 @@
     aria-controls="ai-chatbot-panel"
   >
     <span class="ai-chatbot__launcher-icon ai-chatbot__launcher-icon--open" aria-hidden="true">
-      {%- if block.settings.launcher_icon != blank -%}
-        <img src="{{ block.settings.launcher_icon | image_url: width: 64 }}" alt="" width="26" height="26" loading="lazy">
+      {%- if launcher_icon != blank -%}
+        <img src="{{ launcher_icon | image_url: width: 64 }}" alt="" width="26" height="26" loading="lazy">
       {%- else -%}
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 4.5H20C21.1 4.5 22 5.4 22 6.5V15.5C22 16.6 21.1 17.5 20 17.5H7.4L3.5 21V6.5C3.5 5.4 4.4 4.5 4 4.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
@@ -109,8 +104,8 @@
   >
     <header class="ai-chatbot__header">
       <div class="ai-chatbot__header-info">
-        {%- if block.settings.bot_avatar != blank -%}
-          <img class="ai-chatbot__avatar" src="{{ block.settings.bot_avatar | image_url: width: 96 }}" alt="" width="36" height="36" loading="lazy">
+        {%- if bot_avatar != blank -%}
+          <img class="ai-chatbot__avatar" src="{{ bot_avatar | image_url: width: 96 }}" alt="" width="36" height="36" loading="lazy">
         {%- else -%}
           <span class="ai-chatbot__avatar ai-chatbot__avatar--placeholder" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -132,7 +127,7 @@
               <path d="M4 7H20M9 7V4.5C9 4.2 9.2 4 9.5 4H14.5C14.8 4 15 4.2 15 4.5V7M6 7L7 19C7 19.6 7.4 20 8 20H16C16.6 20 17 19.6 17 19L18 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
-        {%- if block.settings.enable_expand -%}
+        {%- if enable_expand -%}
           <button type="button" id="ai-chatbot-expand" class="ai-chatbot__icon-btn" aria-label="Expand chat" aria-pressed="false">
             <svg class="ai-chatbot__icon ai-chatbot__icon--expand" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path d="M9 4H4V9M15 4H20V9M9 20H4V15M15 20H20V15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -178,14 +173,15 @@
   "name": "AI Chatbot",
   "target": "body",
   "settings": [
-    { "type": "header", "content": "Behavior" },
+    { "type": "header", "content": "Reset" },
     {
       "type": "checkbox",
       "id": "reset_to_default",
-      "label": "Reset all settings to default",
-      "info": "Check this and save to instantly revert colors, icons, size, and text back to defaults. Uncheck afterwards to resume customizing.",
+      "label": "Reset appearance to default",
+      "info": "Check this and save to instantly revert colors, images, border radius, and widget size back to defaults. Chat mode, position, and text content are never affected, so you can keep editing them regardless of this toggle. Uncheck afterwards to resume customizing appearance.",
       "default": false
     },
+    { "type": "header", "content": "Behavior" },
     {
       "type": "select",
       "id": "chat_mode",
