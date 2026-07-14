@@ -27,6 +27,12 @@
         return TOOL_STATUS_TEXT[toolName] || "Working on it…";
     }
 
+    // A single turn can call multiple cart-affecting tools (e.g. get_cart
+    // to check state, then update_cart to change it). Only the LAST one
+    // reflects reality — earlier ones are intermediate and shouldn't be
+    // shown as separate cards.
+    var CART_TOOLS = ["get_cart", "create_cart", "update_cart", "cancel_cart"];
+
     /* ------------------------------------------------------------------
  * Minimal markdown -> HTML for bot text: links + bold only.
  * Escapes HTML first so nothing from the model/user can inject markup,
@@ -759,7 +765,8 @@
         }
 
         var self = this;
-        (turn.toolResults || []).forEach(function (result) {
+        var toolResults = this._pickDisplayableToolResults(turn.toolResults || []);
+        toolResults.forEach(function (result) {
             var el = ProductRenderer.renderToolResult(
                 result.tool,
                 result.data,
@@ -770,6 +777,20 @@
         });
 
         if (turnEl.children.length) this.messagesEl.appendChild(turnEl);
+    };
+
+    // Keeps every non-cart tool result, but only the LAST cart-type one
+    // (get_cart/create_cart/update_cart/cancel_cart) — that's the only one
+    // that reflects the cart's actual final state for this turn.
+    AIChatbot.prototype._pickDisplayableToolResults = function (toolResults) {
+        var lastCartIndex = -1;
+        toolResults.forEach(function (result, i) {
+            if (CART_TOOLS.indexOf(result.tool) !== -1) lastCartIndex = i;
+        });
+        return toolResults.filter(function (result, i) {
+            if (CART_TOOLS.indexOf(result.tool) === -1) return true;
+            return i === lastCartIndex;
+        });
     };
 
     /* ---- Open/close/expand (unchanged behavior) ---------------------- */
@@ -860,6 +881,7 @@
         var statusEl = this._appendStatus(turnEl, "Thinking…");
         var bubbleEl = null;
         var accumulatedText = "";
+        var lastCartCardEl = null;
 
         function ensureBubble() {
             if (statusEl && statusEl.parentNode) {
@@ -903,7 +925,15 @@
                                 self._handleAddToCart.bind(self),
                                 self._handleBuyNow.bind(self)
                             );
-                            if (el) turnEl.appendChild(el);
+                            if (el) {
+                                if (CART_TOOLS.indexOf(evt.tool) !== -1) {
+                                    if (lastCartCardEl && lastCartCardEl.parentNode) {
+                                        lastCartCardEl.remove();
+                                    }
+                                    lastCartCardEl = el;
+                                }
+                                turnEl.appendChild(el);
+                            }
                             self._scrollToBottom();
                             break;
                         case "error":

@@ -1041,3 +1041,7 @@
 .ai-chatbot__product-card-price-current {
     color: rgb(224, 26, 43);
 }
+
+.ai-chatbot__product-card-action--buy:hover {
+    background: var(--ai-chatbot-accent);
+}
