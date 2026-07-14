@@ -805,6 +805,10 @@
     color: var(--ai-chatbot-bg);
 }
 
+.ai-chatbot__product-card-action--buy:hover {
+    background: var(--ai-chatbot-accent);
+}
+
 .ai-chatbot__product-card-body {
     padding: 8px 9px 10px;
     display: flex;
