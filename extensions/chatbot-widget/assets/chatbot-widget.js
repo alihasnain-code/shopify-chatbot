@@ -270,8 +270,40 @@
             applyVariant(initialVariant);
 
             if (variants.length > 1) {
+                var badgesWrap = document.createElement("div");
+                badgesWrap.className = "ai-chatbot__product-card-badges-wrap";
+
                 var badges = document.createElement("div");
                 badges.className = "ai-chatbot__product-card-badges";
+
+                // Figure out which option positions actually differ between
+                // variants (e.g. size) vs. which are identical across all of
+                // them (e.g. every variant being "Stitched"). Shared values
+                // add no information on the badge and just make it longer,
+                // so we drop them from the label.
+                var optionCount = 0;
+                variants.forEach(function (v) {
+                    optionCount = Math.max(optionCount, (v.options || []).length);
+                });
+                var variesAtIndex = [];
+                for (var i = 0; i < optionCount; i++) {
+                    var firstVal;
+                    var seenFirst = false;
+                    var varies = false;
+                    for (var j = 0; j < variants.length; j++) {
+                        var opt = (variants[j].options || [])[i];
+                        var val = opt ? opt.label : undefined;
+                        if (!seenFirst) {
+                            firstVal = val;
+                            seenFirst = true;
+                        } else if (val !== firstVal) {
+                            varies = true;
+                            break;
+                        }
+                    }
+                    variesAtIndex[i] = varies;
+                }
+
                 variants.forEach(function (variant) {
                     var isAvailable = !variant.availability || variant.availability.available !== false;
 
@@ -281,11 +313,15 @@
                     if (!isAvailable) badge.classList.add("is-unavailable");
                     if (variant === initialVariant) badge.classList.add("is-selected");
 
-                    var label = (variant.options || [])
-                        .map(function (o) {
-                            return o.label;
-                        })
-                        .join(" / ") || variant.title;
+                    var allOptionLabels = (variant.options || []).map(function (o) {
+                        return o.label;
+                    });
+                    var distinguishingLabels = allOptionLabels.filter(function (_, idx) {
+                        return variesAtIndex[idx];
+                    });
+                    var label =
+                        (distinguishingLabels.length ? distinguishingLabels : allOptionLabels).join(" / ") ||
+                        variant.title;
                     badge.textContent = label;
 
                     if (!isAvailable) {
@@ -306,7 +342,57 @@
 
                     badges.appendChild(badge);
                 });
-                body.appendChild(badges);
+
+                badgesWrap.appendChild(badges);
+
+                var prevBadgeBtn = document.createElement("button");
+                prevBadgeBtn.type = "button";
+                prevBadgeBtn.className = "ai-chatbot__badges-nav-btn ai-chatbot__badges-nav-btn--prev is-hidden";
+                prevBadgeBtn.setAttribute("aria-label", "Show earlier options");
+                prevBadgeBtn.innerHTML =
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>';
+
+                var nextBadgeBtn = document.createElement("button");
+                nextBadgeBtn.type = "button";
+                nextBadgeBtn.className = "ai-chatbot__badges-nav-btn ai-chatbot__badges-nav-btn--next is-hidden";
+                nextBadgeBtn.setAttribute("aria-label", "Show more options");
+                nextBadgeBtn.innerHTML =
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+
+                badgesWrap.appendChild(prevBadgeBtn);
+                badgesWrap.appendChild(nextBadgeBtn);
+
+                prevBadgeBtn.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    badges.scrollBy({ left: -50, behavior: "smooth" });
+                });
+                nextBadgeBtn.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    badges.scrollBy({ left: 50, behavior: "smooth" });
+                });
+
+                function updateBadgesNav() {
+                    var maxScroll = badges.scrollWidth - badges.clientWidth;
+                    if (maxScroll <= 1) {
+                        badgesWrap.classList.remove("has-overflow");
+                        prevBadgeBtn.classList.add("is-hidden");
+                        nextBadgeBtn.classList.add("is-hidden");
+                        return;
+                    }
+                    badgesWrap.classList.add("has-overflow");
+                    prevBadgeBtn.classList.toggle("is-hidden", badges.scrollLeft <= 1);
+                    nextBadgeBtn.classList.toggle("is-hidden", badges.scrollLeft >= maxScroll - 1);
+                }
+
+                badges.addEventListener("scroll", function () {
+                    window.requestAnimationFrame(updateBadgesNav);
+                });
+                window.requestAnimationFrame(function () {
+                    window.requestAnimationFrame(updateBadgesNav);
+                });
+                window.addEventListener("resize", updateBadgesNav);
+
+                body.appendChild(badgesWrap);
             }
 
             card.appendChild(media);

@@ -805,10 +805,6 @@
     color: var(--ai-chatbot-bg);
 }
 
-.ai-chatbot__product-card-action--buy:hover {
-    background: var(--ai-chatbot-accent);
-}
-
 .ai-chatbot__product-card-body {
     padding: 8px 9px 10px;
     display: flex;
@@ -832,10 +828,78 @@
     font-weight: 600;
 }
 
+.ai-chatbot__product-card-badges-wrap {
+    position: relative;
+    max-width: 100%;
+}
+
 .ai-chatbot__product-card-badges {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(2, auto);
+    grid-auto-columns: max-content;
+    gap: 4px 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    max-width: 100%;
+}
+
+.ai-chatbot__product-card-badges::-webkit-scrollbar {
+    display: none;
+    height: 0;
+}
+
+.ai-chatbot__product-card-badges-wrap.has-overflow .ai-chatbot__product-card-badges {
+    padding: 0 12px;
+}
+
+.ai-chatbot__badges-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--ai-chatbot-muted);
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s var(--ai-chatbot-ease-fast), color 0.15s var(--ai-chatbot-ease-fast);
+}
+
+.ai-chatbot__badges-nav-btn svg {
+    width: 13px;
+    height: 13px;
+}
+
+.ai-chatbot__badges-nav-btn:hover {
+    color: var(--ai-chatbot-text);
+}
+
+.ai-chatbot__badges-nav-btn--prev {
+    left: -3px;
+}
+
+.ai-chatbot__badges-nav-btn--next {
+    right: -3px;
+}
+
+.ai-chatbot__product-card-badges-wrap.has-overflow:hover .ai-chatbot__badges-nav-btn:not(.is-hidden) {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.ai-chatbot__badges-nav-btn.is-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 .ai-chatbot__badge {
