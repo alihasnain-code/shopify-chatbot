@@ -181,10 +181,16 @@
         buildProductCard: function (product, onAddToCart, onBuyNow) {
             var self = this;
             var variants = product.variants || [];
+            function isVariantAvailable(v) {
+                return !v.availability || v.availability.available !== false;
+            }
             var initialVariant =
                 variants.find(function (v) {
-                    return product.selected;
-                }) || variants[0] || null;
+                    return v.selected && isVariantAvailable(v);
+                }) ||
+                variants.find(isVariantAvailable) ||
+                variants[0] ||
+                null;
 
             var card = document.createElement("div");
             card.className = "ai-chatbot__product-card";
