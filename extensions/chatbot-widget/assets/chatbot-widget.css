@@ -550,7 +550,8 @@
 
     #ai-chatbot-root.is-expanded .ai-chatbot__panel {
         width: calc(100vw - 24px);
-        height: calc(100vh - 100px);
+        /* height: calc(100vh - 100px); */
+        height: 100vh;
     }
 }
 
