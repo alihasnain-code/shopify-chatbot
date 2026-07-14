@@ -245,10 +245,26 @@
                 var currency =
                     (variant && variant.price && variant.price.currency) ||
                     (product.price_range && product.price_range.min && product.price_range.min.currency);
+                var comparePriceAmount =
+                    (variant && variant.list_price && variant.list_price.amount) ||
+                    (product.list_price_range && product.list_price_range.min && product.list_price_range.min.amount) ||
+                    0;
 
                 img.src = img_url;
                 titleEl.textContent = product.title || title;
-                priceEl.textContent = self.formatMoney(priceAmount, currency);
+
+                priceEl.innerHTML = "";
+                var currentSpan = document.createElement("span");
+                currentSpan.className = "ai-chatbot__product-card-price-current";
+                currentSpan.textContent = self.formatMoney(priceAmount, currency);
+                priceEl.appendChild(currentSpan);
+
+                if (comparePriceAmount > priceAmount) {
+                    var compareSpan = document.createElement("span");
+                    compareSpan.className = "ai-chatbot__product-card-price-compare";
+                    compareSpan.textContent = self.formatMoney(comparePriceAmount, currency);
+                    priceEl.appendChild(compareSpan);
+                }
             }
 
             applyVariant(initialVariant);
@@ -257,25 +273,37 @@
                 var badges = document.createElement("div");
                 badges.className = "ai-chatbot__product-card-badges";
                 variants.forEach(function (variant) {
+                    var isAvailable = !variant.availability || variant.availability.available !== false;
+
                     var badge = document.createElement("button");
                     badge.type = "button";
                     badge.className = "ai-chatbot__badge";
+                    if (!isAvailable) badge.classList.add("is-unavailable");
                     if (variant === initialVariant) badge.classList.add("is-selected");
+
                     var label = (variant.options || [])
                         .map(function (o) {
                             return o.label;
                         })
                         .join(" / ") || variant.title;
                     badge.textContent = label;
-                    badge.addEventListener("click", function (e) {
-                        e.stopPropagation();
-                        applyVariant(variant);
-                        var siblings = badges.querySelectorAll(".ai-chatbot__badge");
-                        for (var i = 0; i < siblings.length; i++) {
-                            siblings[i].classList.remove("is-selected");
-                        }
-                        badge.classList.add("is-selected");
-                    });
+
+                    if (!isAvailable) {
+                        badge.disabled = true;
+                        badge.setAttribute("aria-disabled", "true");
+                        badge.title = "Currently unavailable";
+                    } else {
+                        badge.addEventListener("click", function (e) {
+                            e.stopPropagation();
+                            applyVariant(variant);
+                            var siblings = badges.querySelectorAll(".ai-chatbot__badge");
+                            for (var i = 0; i < siblings.length; i++) {
+                                siblings[i].classList.remove("is-selected");
+                            }
+                            badge.classList.add("is-selected");
+                        });
+                    }
+
                     badges.appendChild(badge);
                 });
                 body.appendChild(badges);

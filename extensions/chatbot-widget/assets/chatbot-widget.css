@@ -895,3 +895,27 @@
     text-decoration: underline;
     font-weight: 600;
 }
+
+.ai-chatbot__badge.is-unavailable {
+    opacity: 0.4;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
+.ai-chatbot__badge:disabled {
+    pointer-events: none;
+}
+
+.ai-chatbot__product-card-price {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.ai-chatbot__product-card-price-compare {
+    text-decoration: line-through;
+    color: var(--ai-chatbot-muted);
+    font-weight: 400;
+    font-size: 11px;
+}
