@@ -28,6 +28,30 @@
     }
 
     /* ------------------------------------------------------------------
+ * Minimal markdown -> HTML for bot text: links + bold only.
+ * Escapes HTML first so nothing from the model/user can inject markup,
+ * then converts [label](url) and **bold**.
+ * ------------------------------------------------------------------ */
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function renderMarkdownLite(text) {
+        var html = escapeHtml(text);
+        html = html.replace(
+            /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+            '<a href="$2" target="_blank" rel="noopener">$1</a>'
+        );
+        html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+        return html;
+    }
+
+    /* ------------------------------------------------------------------
      * AIChatbotStorage — remembers ONLY the conversationId, per shop.
      * No message content ever touches the browser's persistent storage.
      * ------------------------------------------------------------------ */
@@ -287,6 +311,18 @@
             return row;
         },
 
+        buildSimpleNotice: function (text) {
+            var wrap = document.createElement("div");
+            wrap.className = "ai-chatbot__cart-card";
+
+            var notice = document.createElement("div");
+            notice.className = "ai-chatbot__cart-card-empty";
+            notice.textContent = text;
+
+            wrap.appendChild(notice);
+            return wrap;
+        },
+
         // get_cart / create_cart / update_cart / cancel_cart all share this shape.
         buildCartCard: function (cart) {
             var self = this;
@@ -372,11 +408,15 @@
             if (tool === "get_product" && data.product) {
                 return this.buildProductRow([data.product], onAddToCart, onBuyNow);
             }
+            if (tool === "cancel_cart") {
+                // MCP returns the cart's last known state as confirmation, not an
+                // emptied cart — don't trust line_items here, it's misleading.
+                return this.buildSimpleNotice("Your cart has been cleared.");
+            }
             if (
                 tool === "get_cart" ||
                 tool === "create_cart" ||
-                tool === "update_cart" ||
-                tool === "cancel_cart"
+                tool === "update_cart"
             ) {
                 return this.buildCartCard(data);
             }
@@ -524,7 +564,7 @@
         if (turn.text) {
             var bubble = document.createElement("div");
             bubble.className = "ai-chatbot__message ai-chatbot__message--bot";
-            bubble.textContent = turn.text;
+            bubble.innerHTML = renderMarkdownLite(turn.text);
             turnEl.appendChild(bubble);
         }
 
@@ -599,7 +639,11 @@
     AIChatbot.prototype._appendBubble = function (role, text) {
         var bubble = document.createElement("div");
         bubble.className = "ai-chatbot__message ai-chatbot__message--" + (role === "user" ? "user" : "bot");
-        bubble.textContent = text;
+        if (role === "user") {
+            bubble.textContent = text;
+        } else {
+            bubble.innerHTML = renderMarkdownLite(text);
+        }
         this.messagesEl.appendChild(bubble);
         this._scrollToBottom();
         return bubble;
@@ -684,6 +728,9 @@
                             if (statusEl) {
                                 statusEl.remove();
                                 statusEl = null;
+                            }
+                            if (bubbleEl) {
+                                bubbleEl.innerHTML = renderMarkdownLite(accumulatedText);
                             }
                             break;
                         default:
