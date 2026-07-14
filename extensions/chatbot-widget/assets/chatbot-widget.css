@@ -656,7 +656,18 @@
 }
 
 /* --------------------------------------------------------------------------
-   Product row (horizontal scroll)
+   Product row wrapper (row + nav arrows, Macy's-style)
+   -------------------------------------------------------------------------- */
+.ai-chatbot__product-row-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Product row (horizontal scroll, scrollbar hidden — arrows drive scrolling)
    -------------------------------------------------------------------------- */
 .ai-chatbot__product-row {
     display: flex;
@@ -666,16 +677,55 @@
     padding: 2px 2px 8px;
     max-width: 100%;
     scroll-snap-type: x proximity;
+    scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 .ai-chatbot__product-row::-webkit-scrollbar {
-    height: 5px;
+    display: none;
+    height: 0;
 }
 
-.ai-chatbot__product-row::-webkit-scrollbar-thumb {
-    background: var(--ai-chatbot-border);
-    border-radius: 3px;
+/* --------------------------------------------------------------------------
+   Product row nav (prev/next arrows, centered below the row)
+   -------------------------------------------------------------------------- */
+.ai-chatbot__product-row-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.ai-chatbot__product-row-nav-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--ai-chatbot-border);
+    background: var(--ai-chatbot-bg);
+    color: var(--ai-chatbot-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: border-color 0.15s var(--ai-chatbot-ease-fast), background-color 0.15s var(--ai-chatbot-ease-fast), opacity 0.15s var(--ai-chatbot-ease-fast);
+}
+
+.ai-chatbot__product-row-nav-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.ai-chatbot__product-row-nav-btn:hover:not(:disabled) {
+    border-color: var(--ai-chatbot-accent);
+    color: var(--ai-chatbot-accent);
+}
+
+.ai-chatbot__product-row-nav-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
 }
 
 .ai-chatbot__product-card {
@@ -918,4 +968,8 @@
     color: var(--ai-chatbot-muted);
     font-weight: 400;
     font-size: 11px;
+}
+
+.ai-chatbot__product-card-price-current {
+    color: rgb(224, 26, 43);
 }

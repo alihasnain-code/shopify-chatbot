@@ -336,7 +336,77 @@
             products.forEach(function (product) {
                 row.appendChild(self.buildProductCard(product, onAddToCart, onBuyNow));
             });
-            return row;
+
+            // Single product: no carousel needed, return the row as-is
+            // (preserves prior markup/behavior for the single-product case).
+            if (products.length <= 1) return row;
+
+            var wrap = document.createElement("div");
+            wrap.className = "ai-chatbot__product-row-wrap";
+
+            var nav = document.createElement("div");
+            nav.className = "ai-chatbot__product-row-nav";
+
+            var prevBtn = document.createElement("button");
+            prevBtn.type = "button";
+            prevBtn.className = "ai-chatbot__product-row-nav-btn";
+            prevBtn.setAttribute("aria-label", "Scroll products left");
+            prevBtn.innerHTML =
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>';
+
+            var nextBtn = document.createElement("button");
+            nextBtn.type = "button";
+            nextBtn.className = "ai-chatbot__product-row-nav-btn";
+            nextBtn.setAttribute("aria-label", "Scroll products right");
+            nextBtn.innerHTML =
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+
+            nav.appendChild(prevBtn);
+            nav.appendChild(nextBtn);
+
+            wrap.appendChild(row);
+            wrap.appendChild(nav);
+
+            // Scroll by roughly one "page" (visible width) at a time.
+            function scrollByPage(direction) {
+                var amount = row.clientWidth * 0.9 * direction;
+                row.scrollBy({ left: amount, behavior: "smooth" });
+            }
+
+            prevBtn.addEventListener("click", function () {
+                scrollByPage(-1);
+            });
+            nextBtn.addEventListener("click", function () {
+                scrollByPage(1);
+            });
+
+            function updateNavState() {
+                var maxScroll = row.scrollWidth - row.clientWidth;
+                // No overflow at all: hide the nav entirely instead of two
+                // disabled buttons doing nothing.
+                if (maxScroll <= 1) {
+                    nav.style.display = "none";
+                    return;
+                }
+                nav.style.display = "";
+                prevBtn.disabled = row.scrollLeft <= 1;
+                nextBtn.disabled = row.scrollLeft >= maxScroll - 1;
+            }
+
+            row.addEventListener("scroll", function () {
+                window.requestAnimationFrame(updateNavState);
+            });
+
+            // Row isn't in the DOM yet when this runs, so defer the initial
+            // measurement until after it has been attached and laid out
+            // (double rAF to be safe across browsers/insertion timing).
+            window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(updateNavState);
+            });
+
+            window.addEventListener("resize", updateNavState);
+
+            return wrap;
         },
 
         buildSimpleNotice: function (text) {
