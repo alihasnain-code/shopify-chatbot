@@ -761,6 +761,15 @@
         this._loadStarterQuestions();
     };
 
+    AIChatbot.prototype._renderEmptyState = function () {
+        var el = document.createElement("div");
+        el.className = "ai-chatbot__empty-state";
+        el.innerHTML =
+            '<h3 class="ai-chatbot__empty-state-title">Start Conversation</h3>' +
+            '<p class="ai-chatbot__empty-state-text">Welcome! Type your first message below.</p>';
+        this.messagesEl.appendChild(el);
+    };
+
     /* ---- Starter questions -------------------------------------------- */
     AIChatbot.prototype._loadStarterQuestions = function () {
         var self = this;
@@ -768,7 +777,10 @@
             .fetchStarterQuestions()
             .then(function (payload) {
                 var questions = (payload && payload.data) || [];
-                if (!questions.length) return;
+                if (!questions.length) {
+                    self._renderEmptyState();
+                    return;
+                }
                 self._renderStarterQuestions(questions);
             })
             .catch(function () {

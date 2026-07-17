@@ -1080,3 +1080,20 @@
 .ai-chatbot__product-card-action--buy:hover {
     background: var(--ai-chatbot-accent);
 }
+
+.ai-chatbot__empty-state {
+    margin: auto;
+    text-align: center;
+    padding: 0 20px;
+}
+
+.ai-chatbot__empty-state-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.ai-chatbot__empty-state-text {
+    font-size: 13.5px;
+    color: var(--ai-chatbot-muted);
+}
