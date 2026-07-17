@@ -645,6 +645,9 @@
         this.overlay = root.querySelector("#ai-chatbot-overlay");
         this._starterQuestionsRequestId = 0;
 
+        this._starterQuestionsCache = null;
+        this._starterQuestionsFetched = false;
+
         this.shop = root.dataset.shop || window.location.hostname;
         // this.shop = "shomi-official.myshopify.com";
 
@@ -786,8 +789,18 @@
     /* ---- Starter questions -------------------------------------------- */
     AIChatbot.prototype._loadStarterQuestions = function () {
         var self = this;
-        var requestId = ++this._starterQuestionsRequestId;
 
+        if (this._starterQuestionsFetched) {
+            var questions = this._starterQuestionsCache || [];
+            if (questions.length) {
+                this._renderStarterQuestions(questions);
+            } else {
+                this._renderEmptyState();
+            }
+            return;
+        }
+
+        var requestId = ++this._starterQuestionsRequestId;
         var placeholder = this._renderEmptyState();
 
         this.api
@@ -795,13 +808,15 @@
             .then(function (payload) {
                 if (requestId !== self._starterQuestionsRequestId) return;
                 var questions = (payload && payload.data) || [];
+                self._starterQuestionsFetched = true;
+                self._starterQuestionsCache = questions;
                 if (questions.length) {
                     if (placeholder && placeholder.parentNode) placeholder.remove();
                     self._renderStarterQuestions(questions);
                 }
             })
             .catch(function () {
-                /* no starter questions available — fail silently */
+                /* fetch failed — don't mark as fetched, so next attempt retries */
             });
     };
 
@@ -817,6 +832,7 @@
             btn.className = "ai-chatbot__starter-question";
             btn.textContent = q.question;
             btn.addEventListener("click", function () {
+                e.stopPropagation();
                 if (self.isBusy) return;
                 wrap.remove();
                 self._sendStarterQuestion(q.question);
