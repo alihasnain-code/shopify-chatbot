@@ -10,7 +10,7 @@ import {
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
-import { FormFieldsEditor } from "app/components/form-field-editor";
+import { FormFieldsEditor } from "../components/form-field-editor";
 
 // NOTE: filename assumes react-router flat-routes dynamic segment syntax
 // (app.edit-form.$id.tsx -> /app/edit-form/:id). Rename to match your

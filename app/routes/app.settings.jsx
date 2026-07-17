@@ -1,7 +1,7 @@
 import { Outlet } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import Navbar from "app/components/navbar";
+import Navbar from "../components/navbar";
 
 export const loader = async ({ request }) => {
     const { redirect } = await authenticate.admin(request);
