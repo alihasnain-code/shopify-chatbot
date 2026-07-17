@@ -108,6 +108,14 @@
         });
     };
 
+    AIChatbotAPI.prototype.fetchStarterQuestions = function () {
+        var url = this.apiBase + "/questions/" + encodeURIComponent(this.shop);
+        return fetch(url).then(function (res) {
+            if (!res.ok) throw new Error("Failed to load starter questions");
+            return res.json();
+        });
+    };
+
     AIChatbotAPI.prototype.addToCart = function (payload) {
         return fetch(this.apiBase + "/cart/add", {
             method: "POST",
@@ -750,7 +758,50 @@
     };
 
     AIChatbot.prototype._renderWelcome = function () {
-        this._appendBubble("bot", this.welcomeMessage);
+        this._loadStarterQuestions();
+    };
+
+    /* ---- Starter questions -------------------------------------------- */
+    AIChatbot.prototype._loadStarterQuestions = function () {
+        var self = this;
+        this.api
+            .fetchStarterQuestions()
+            .then(function (payload) {
+                var questions = (payload && payload.data) || [];
+                if (!questions.length) return;
+                self._renderStarterQuestions(questions);
+            })
+            .catch(function () {
+                /* no starter questions available — fail silently */
+            });
+    };
+
+    AIChatbot.prototype._renderStarterQuestions = function (questions) {
+        var self = this;
+
+        var wrap = document.createElement("div");
+        wrap.className = "ai-chatbot__starter-questions";
+
+        questions.forEach(function (q) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "ai-chatbot__starter-question";
+            btn.textContent = q.question;
+            btn.addEventListener("click", function () {
+                if (self.isBusy) return;
+                wrap.remove();
+                self._sendStarterQuestion(q.question);
+            });
+            wrap.appendChild(btn);
+        });
+
+        this.messagesEl.appendChild(wrap);
+        this._scrollToBottom();
+    };
+
+    AIChatbot.prototype._sendStarterQuestion = function (text) {
+        this.input.value = text;
+        this._handleSend();
     };
 
     AIChatbot.prototype._renderBotTurnFromHistory = function (turn) {

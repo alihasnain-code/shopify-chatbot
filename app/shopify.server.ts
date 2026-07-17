@@ -6,6 +6,8 @@ import {
 } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
+import { ensureDefaultShopSettings } from "./models/onboarding.server";
+import { policySyncQueue } from "./queue";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -18,6 +20,31 @@ const shopify = shopifyApp({
   distribution: AppDistribution.AppStore,
   future: {
     expiringOfflineAccessTokens: true,
+  },
+  hooks: {
+    afterAuth: async ({ session, admin }) => {
+      await shopify.registerWebhooks({ session });
+
+      // 1. Seed default AI persona / starter questions / usage settings for this session
+      await ensureDefaultShopSettings(session.id);
+
+      // 2. Dispatch background job to fetch, chunk, embed, and store policies
+      await policySyncQueue.add(
+        "sync-store-policies",
+        { shop: session.shop }, // Payload needed by the worker
+        {
+          attempts: 3, // Retry up to 3 times if Shopify API or embedding fails
+          backoff: {
+            type: "exponential",
+            delay: 5000, // Wait 5s before 1st retry, 10s for 2nd, etc.
+          },
+          removeOnComplete: true, // Clean up Redis storage when successfully parsed
+          removeOnFail: false,    // Keep failures around so you can debug the error logs
+        }
+      );
+
+      console.log(`[BullMQ] Enqueued policy sync for: ${session.shop}`);
+    }
   },
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }

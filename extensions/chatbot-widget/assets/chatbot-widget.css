@@ -416,6 +416,41 @@
     border-bottom-right-radius: 4px;
 }
 
+/* Starter questions ------------------------------------------------------ */
+.ai-chatbot__starter-questions {
+    align-self: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 92%;
+    animation: ai-chatbot-msg-in 0.28s var(--ai-chatbot-ease) both;
+}
+
+.ai-chatbot__starter-question {
+    appearance: none;
+    -webkit-appearance: none;
+    text-align: left;
+    font-family: inherit;
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: var(--ai-chatbot-text);
+    background: var(--ai-chatbot-bg);
+    border: 1px solid var(--ai-chatbot-border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background var(--ai-chatbot-ease-fast) 0.15s, border-color var(--ai-chatbot-ease-fast) 0.15s, transform var(--ai-chatbot-ease-fast) 0.15s;
+}
+
+.ai-chatbot__starter-question:hover {
+    background: var(--ai-chatbot-surface-hover);
+    border-color: var(--ai-chatbot-accent);
+}
+
+.ai-chatbot__starter-question:active {
+    transform: scale(0.98);
+}
+
 /* Typing indicator */
 .ai-chatbot__typing {
     align-self: flex-start;
