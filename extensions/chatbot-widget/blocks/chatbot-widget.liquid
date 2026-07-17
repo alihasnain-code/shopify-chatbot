@@ -1,21 +1,230 @@
-{% assign avg_rating = block.settings.product.metafields.demo.avg_rating.value | round %}
-<span style="color:{{ block.settings.colour }}">
-  {% render 'stars', rating: avg_rating %}
-</span>
-{% if avg_rating >= 4 %}
-  <br>
-  <img src="{{ "thumbs-up.png" | asset_img_url: '15x' }}" height="15" width="15" loading="lazy">
-  {{ 'ratings.home.recommendationText' | t }}
-{% endif %}
+{% comment %}
+  AI Chatbot — Theme App Extension (App Embed Block)
+  ----------------------------------------------------
+  Renders a single global chat widget on every storefront page.
+  Merchants enable/configure it under:
+    Theme Editor → App embeds → AI Chatbot
+
+  This file only handles MARKUP + SETTINGS. All behavior lives in
+  assets/chatbot-widget.js, all visuals in assets/chatbot-widget.css.
+{% endcomment %}
+
+{%- liquid
+  assign is_reset = block.settings.reset_to_default
+
+  # Behavior & content are always live — the reset toggle never hides these,
+  # so merchants can keep editing chat mode, position, and copy at any time.
+  assign chat_mode = block.settings.chat_mode
+  assign position = block.settings.position
+  assign start_open = block.settings.start_open
+  assign enable_expand = block.settings.enable_expand
+  assign chat_title = block.settings.chat_title | default: 'Chat with us'
+  assign subtitle = block.settings.subtitle
+  assign welcome_message = block.settings.welcome_message | default: 'Hi there! How can I help you today?'
+  assign placeholder_text = block.settings.placeholder_text | default: 'Type a message...'
+  assign custom_css_class = block.settings.custom_css_class
+
+  # Only appearance settings are affected by "Reset appearance to default".
+  if is_reset
+    assign bot_avatar = blank
+    assign launcher_icon = blank
+    assign accent_color = '#111111'
+    assign background_color = '#FFFFFF'
+    assign text_color = '#111111'
+    assign border_radius = 16
+    assign widget_width = 380
+    assign widget_height = 600
+  else
+    assign bot_avatar = block.settings.bot_avatar
+    assign launcher_icon = block.settings.launcher_icon
+    assign accent_color = block.settings.accent_color
+    assign background_color = block.settings.background_color
+    assign text_color = block.settings.text_color
+    assign border_radius = block.settings.border_radius
+    assign widget_width = block.settings.widget_width
+    assign widget_height = block.settings.widget_height
+  endif
+-%}
+
+<div
+  id="ai-chatbot-root"
+  class="ai-chatbot ai-chatbot--{{ chat_mode }} ai-chatbot--{{ position }}{% if custom_css_class != blank %} {{ custom_css_class }}{% endif %}"
+  data-chat-mode="{{ chat_mode }}"
+  data-position="{{ position }}"
+  data-start-open="{{ start_open }}"
+  data-enable-expand="{{ enable_expand }}"
+  data-placeholder="{{ placeholder_text | escape }}"
+  data-welcome-message="{{ welcome_message | escape }}"
+  data-shop="{{ shop.permanent_domain }}"
+  style="
+    --ai-chatbot-accent: {{ accent_color }};
+    --ai-chatbot-bg: {{ background_color }};
+    --ai-chatbot-text: {{ text_color }};
+    --ai-chatbot-radius: {{ border_radius }}px;
+    --ai-chatbot-width: {{ widget_width }}px;
+    --ai-chatbot-height: {{ widget_height }}px;
+  "
+  {{ block.shopify_attributes }}
+>
+  <div id="ai-chatbot-overlay" class="ai-chatbot__overlay" aria-hidden="true"></div>
+  {%- comment %} Launcher button — visible when the panel is closed {%- endcomment %}
+  <button
+    type="button"
+    id="ai-chatbot-launcher"
+    class="ai-chatbot__launcher"
+    aria-label="Open chat"
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    aria-controls="ai-chatbot-panel"
+  >
+    <span class="ai-chatbot__launcher-icon ai-chatbot__launcher-icon--open" aria-hidden="true">
+      {%- if launcher_icon != blank -%}
+        <img src="{{ launcher_icon | image_url: width: 64 }}" alt="" width="26" height="26" loading="lazy">
+      {%- else -%}
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 4.5H20C21.1 4.5 22 5.4 22 6.5V15.5C22 16.6 21.1 17.5 20 17.5H7.4L3.5 21V6.5C3.5 5.4 4.4 4.5 4 4.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+        </svg>
+      {%- endif -%}
+    </span>
+    <span class="ai-chatbot__launcher-icon ai-chatbot__launcher-icon--close" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </span>
+  </button>
+
+  {%- comment %} Chat panel — widget or drawer depending on chat_mode {%- endcomment %}
+  <section
+    id="ai-chatbot-panel"
+    class="ai-chatbot__panel"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="ai-chatbot-title"
+    aria-hidden="true"
+  >
+    <header class="ai-chatbot__header">
+      <div class="ai-chatbot__header-info">
+        {%- if bot_avatar != blank -%}
+          <img class="ai-chatbot__avatar" src="{{ bot_avatar | image_url: width: 96 }}" alt="" width="36" height="36" loading="lazy">
+        {%- else -%}
+          <span class="ai-chatbot__avatar ai-chatbot__avatar--placeholder" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M4.5 20C5.6 16.3 8.5 14 12 14C15.5 14 18.4 16.3 19.5 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+        {%- endif -%}
+        <div class="ai-chatbot__titles">
+          <h2 id="ai-chatbot-title" class="ai-chatbot__title">{{ chat_title }}</h2>
+          {%- if subtitle != blank -%}
+            <p class="ai-chatbot__subtitle">{{ subtitle }}</p>
+          {%- endif -%}
+        </div>
+      </div>
+      <div class="ai-chatbot__header-actions">
+          <button type="button" id="ai-chatbot-clear" class="ai-chatbot__icon-btn" aria-label="Clear conversation">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M4 7H20M9 7V4.5C9 4.2 9.2 4 9.5 4H14.5C14.8 4 15 4.2 15 4.5V7M6 7L7 19C7 19.6 7.4 20 8 20H16C16.6 20 17 19.6 17 19L18 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        {%- if enable_expand -%}
+          <button type="button" id="ai-chatbot-expand" class="ai-chatbot__icon-btn" aria-label="Expand chat" aria-pressed="false">
+            <svg class="ai-chatbot__icon ai-chatbot__icon--expand" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M9 4H4V9M15 4H20V9M9 20H4V15M15 20H20V15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg class="ai-chatbot__icon ai-chatbot__icon--collapse" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M4 9H9V4M20 9H15V4M4 15H9V20M20 15H15V20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        {%- endif -%}
+        <button type="button" id="ai-chatbot-close" class="ai-chatbot__icon-btn" aria-label="Close chat">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="ai-chatbot-messages" class="ai-chatbot__messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+    <form id="ai-chatbot-form" class="ai-chatbot__footer" autocomplete="off">
+      <label for="ai-chatbot-input" class="visually-hidden">Type your message</label>
+      <textarea
+        id="ai-chatbot-input"
+        class="ai-chatbot__input"
+        rows="1"
+        placeholder="{{ placeholder_text }}"
+        aria-label="Type your message"
+      ></textarea>
+      <button type="submit" id="ai-chatbot-send" class="ai-chatbot__send-btn" aria-label="Send message" disabled>
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M4 12L20 4L14 20L11 13L4 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </form>
+  </section>
+</div>
+
+{{ 'chatbot-widget.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'chatbot-widget.js' | asset_url }}" defer="defer"></script>
 
 {% schema %}
 {
-  "name": "Star Rating",
-  "target": "section",
+  "name": "AI Chatbot",
+  "target": "body",
   "settings": [
-    { "type": "product", "id": "product", "label": "product", "autofill": true },
-    { "type": "color", "id": "colour", "label": "Star Colour", "default": "#ff0000" }
+    { "type": "header", "content": "Reset" },
+    {
+      "type": "checkbox",
+      "id": "reset_to_default",
+      "label": "Reset appearance to default",
+      "info": "Check this and save to instantly revert colors, images, border radius, and widget size back to defaults. Chat mode, position, and text content are never affected, so you can keep editing them regardless of this toggle. Uncheck afterwards to resume customizing appearance.",
+      "default": false
+    },
+    { "type": "header", "content": "Behavior" },
+    {
+      "type": "select",
+      "id": "chat_mode",
+      "label": "Chat mode",
+      "options": [
+        { "value": "widget", "label": "Floating widget" },
+        { "value": "drawer", "label": "Sliding drawer" }
+      ],
+      "default": "widget"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Position",
+      "options": [
+        { "value": "bottom-right", "label": "Bottom right" },
+        { "value": "bottom-left", "label": "Bottom left" }
+      ],
+      "default": "bottom-right"
+    },
+    { "type": "checkbox", "id": "start_open", "label": "Start opened", "default": false },
+    { "type": "checkbox", "id": "enable_expand", "label": "Enable expand button", "default": true },
+
+    { "type": "header", "content": "Content" },
+    { "type": "text", "id": "chat_title", "label": "Chat title", "default": "Chat with us" },
+    { "type": "text", "id": "subtitle", "label": "Subtitle", "default": "We typically reply instantly" },
+    { "type": "textarea", "id": "welcome_message", "label": "Welcome message", "default": "Hi there! How can I help you today?" },
+    { "type": "text", "id": "placeholder_text", "label": "Input placeholder", "default": "Type a message..." },
+
+    { "type": "header", "content": "Images" },
+    { "type": "image_picker", "id": "bot_avatar", "label": "Bot avatar" },
+    { "type": "image_picker", "id": "launcher_icon", "label": "Launcher icon" },
+
+    { "type": "header", "content": "Appearance" },
+    { "type": "color", "id": "accent_color", "label": "Primary accent color", "default": "#111111" },
+    { "type": "color", "id": "background_color", "label": "Background color", "default": "#FFFFFF" },
+    { "type": "color", "id": "text_color", "label": "Text color", "default": "#111111" },
+    { "type": "range", "id": "border_radius", "label": "Border radius", "min": 0, "max": 32, "step": 1, "unit": "px", "default": 16 },
+    { "type": "range", "id": "widget_width", "label": "Widget width", "min": 300, "max": 480, "step": 10, "unit": "px", "default": 380 },
+    { "type": "range", "id": "widget_height", "label": "Widget height", "min": 400, "max": 720, "step": 10, "unit": "px", "default": 600 },
+
+    { "type": "header", "content": "Advanced" },
+    { "type": "text", "id": "custom_css_class", "label": "Custom CSS class (optional)" }
   ]
 }
 {% endschema %}
-
