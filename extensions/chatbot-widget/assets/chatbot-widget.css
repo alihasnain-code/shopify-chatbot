@@ -416,41 +416,6 @@
     border-bottom-right-radius: 4px;
 }
 
-/* Starter questions ------------------------------------------------------ */
-.ai-chatbot__starter-questions {
-    align-self: flex-start;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-width: 92%;
-    animation: ai-chatbot-msg-in 0.28s var(--ai-chatbot-ease) both;
-}
-
-.ai-chatbot__starter-question {
-    appearance: none;
-    -webkit-appearance: none;
-    text-align: left;
-    font-family: inherit;
-    font-size: 13.5px;
-    line-height: 1.4;
-    color: var(--ai-chatbot-text);
-    background: var(--ai-chatbot-bg);
-    border: 1px solid var(--ai-chatbot-border);
-    border-radius: 12px;
-    padding: 10px 14px;
-    cursor: pointer;
-    transition: background var(--ai-chatbot-ease-fast) 0.15s, border-color var(--ai-chatbot-ease-fast) 0.15s, transform var(--ai-chatbot-ease-fast) 0.15s;
-}
-
-.ai-chatbot__starter-question:hover {
-    background: var(--ai-chatbot-surface-hover);
-    border-color: var(--ai-chatbot-accent);
-}
-
-.ai-chatbot__starter-question:active {
-    transform: scale(0.98);
-}
-
 /* Typing indicator */
 .ai-chatbot__typing {
     align-self: flex-start;
@@ -1081,18 +1046,34 @@
     background: var(--ai-chatbot-accent);
 }
 
-.ai-chatbot__empty-state {
-    margin: auto;
-    text-align: center;
-    padding: 0 20px;
+/* ---- Starter question chips ----------------------------------------- */
+.ai-chatbot__starter-questions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 4px 0 8px;
 }
 
-.ai-chatbot__empty-state-title {
-    font-weight: 600;
-    margin-bottom: 6px;
+.ai-chatbot__starter-question {
+    display: inline-block;
+    padding: 8px 14px;
+    border: 1px solid var(--ai-chatbot-border);
+    border-radius: 999px;
+    background: var(--ai-chatbot-bg);
+    color: var(--ai-chatbot-text);
+    font-size: 13px;
+    line-height: 1.4;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s;
 }
 
-.ai-chatbot__empty-state-text {
-    font-size: 13.5px;
-    color: var(--ai-chatbot-muted);
+.ai-chatbot__starter-question:hover {
+    background: var(--ai-chatbot-border);
+    border-color: var(--ai-chatbot-muted);
+}
+
+.ai-chatbot__starter-question:focus-visible {
+    outline: 2px solid var(--ai-chatbot-accent);
+    outline-offset: 2px;
 }
