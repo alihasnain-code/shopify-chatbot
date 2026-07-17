@@ -831,7 +831,7 @@
             btn.type = "button";
             btn.className = "ai-chatbot__starter-question";
             btn.textContent = q.question;
-            btn.addEventListener("click", function () {
+            btn.addEventListener("click", function (e) {
                 e.stopPropagation();
                 if (self.isBusy) return;
                 wrap.remove();
