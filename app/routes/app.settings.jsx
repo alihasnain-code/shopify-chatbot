@@ -1,14 +1,9 @@
-import type {
-    ActionFunctionArgs,
-    HeadersFunction,
-    LoaderFunctionArgs,
-} from "react-router";
 import { Outlet } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import Navbar from "app/components/navbar";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }) => {
     const { redirect } = await authenticate.admin(request);
 
     const url = new URL(request.url);
@@ -20,7 +15,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return null;
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }) => {
     const { admin } = await authenticate.admin(request);
     return null;
 };
@@ -40,6 +35,6 @@ export default function Index() {
     );
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
+export const headers = (headersArgs) => {
     return boundary.headers(headersArgs);
 };

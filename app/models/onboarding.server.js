@@ -1,9 +1,5 @@
-import { Prisma } from "@prisma/client";
 import db from "../db.server";
-import type { FormFieldDef } from "../components/form-field-editor";
 
-// One starter question per tool the bot currently supports:
-// get_product, lookup_catalog, cart tools, checkout link.
 const DEFAULT_STARTER_QUESTIONS = [
     "What products can I browse in your store?",
     "What's your return and shipping policy?",
@@ -13,7 +9,7 @@ const DEFAULT_STARTER_QUESTIONS = [
 
 const DEFAULT_FORM_NAME = "Lead Capture Form";
 
-const DEFAULT_FORM_FIELDS: FormFieldDef[] = [
+const DEFAULT_FORM_FIELDS = [
     {
         id: "first_name",
         label: "First Name",
@@ -48,7 +44,7 @@ const DEFAULT_FORM_FIELDS: FormFieldDef[] = [
     },
 ];
 
-export async function ensureDefaultShopSettings(sessionId: string) {
+export async function ensureDefaultShopSettings(sessionId) {
     await db.aipersonasettings.upsert({
         where: { sessionId },
         create: { sessionId, customInstructions: null, tone: "standard" },

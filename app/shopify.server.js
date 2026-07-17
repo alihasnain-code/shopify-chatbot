@@ -12,7 +12,7 @@ import { policySyncQueue } from "./queue";
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-  apiVersion: ApiVersion.April26,
+  apiVersion: ApiVersion.July26,
   scopes: process.env.SCOPES?.split(","),
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
@@ -22,7 +22,7 @@ const shopify = shopifyApp({
     expiringOfflineAccessTokens: true,
   },
   hooks: {
-    afterAuth: async ({ session, admin }) => {
+    afterAuth: async ({ session }) => {
       await shopify.registerWebhooks({ session });
 
       // 1. Seed default AI persona / starter questions / usage settings for this session
@@ -31,15 +31,15 @@ const shopify = shopifyApp({
       // 2. Dispatch background job to fetch, chunk, embed, and store policies
       await policySyncQueue.add(
         "sync-store-policies",
-        { shop: session.shop }, // Payload needed by the worker
+        { shop: session.shop },
         {
-          attempts: 3, // Retry up to 3 times if Shopify API or embedding fails
+          attempts: 3,
           backoff: {
             type: "exponential",
-            delay: 5000, // Wait 5s before 1st retry, 10s for 2nd, etc.
+            delay: 5000,
           },
-          removeOnComplete: true, // Clean up Redis storage when successfully parsed
-          removeOnFail: false,    // Keep failures around so you can debug the error logs
+          removeOnComplete: true,
+          removeOnFail: false,
         }
       );
 
@@ -52,7 +52,7 @@ const shopify = shopifyApp({
 });
 
 export default shopify;
-export const apiVersion = ApiVersion.April26;
+export const apiVersion = ApiVersion.July26;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;
 export const unauthenticated = shopify.unauthenticated;

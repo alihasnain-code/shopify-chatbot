@@ -1,32 +1,9 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "048364cef3f567f10c505beec421258b"
-name = "chatbot"
+client_id = "8fc4998e030dd505b2733c9772bafa75"
+name = "Assistify"
 application_url = "https://chatbot.kiz.app"
 embedded = true
-
-[build]
-automatically_update_urls_on_dev = true
-
-[webhooks]
-api_version = "2026-07"
-
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/privacy"
-  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
-
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/app/scopes_update"
-  topics = [ "app/scopes_update" ]
-
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/orders/create"
-  topics = [ "orders/create" ]
-  include_fields = [ "admin_graphql_api_id", "name" ]
-
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/app/uninstalled"
-  topics = [ "app/uninstalled" ]
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -36,9 +13,6 @@ scopes = "read_orders,write_products,read_legal_policies"
 url = "https://chatbot-backend.kiz.app"
 subpath = "ai-chatbot"
 prefix = "apps"
-
-[auth]
-redirect_urls = [ "https://chatbot.kiz.app/api/auth" ]
 
 [product.metafields.app.demo_info]
 type = "single_line_text_field"
@@ -63,3 +37,25 @@ required = true
 [metaobjects.app.example.fields.description]
 name = "Description"
 type = "multi_line_text_field"
+
+[webhooks]
+api_version = "2026-10"
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/scopes_update"
+  topics = [ "app/scopes_update" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/privacy"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+
+[auth]
+redirect_urls = [ "https://chatbot.kiz.app/api/auth" ]
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true

@@ -1,6 +1,6 @@
 import { isToday, format, isYesterday, differenceInCalendarDays } from "date-fns";
 
-export function formatDate(dateString: string) {
+export function formatDate(dateString) {
     const date = new Date(dateString);
     const now = new Date();
 

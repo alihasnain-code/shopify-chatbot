@@ -4,7 +4,7 @@ export default function Navbar() {
 
     const location = useLocation();
 
-    const isActive = (path: string) => location.pathname === path;
+    const isActive = (path) => location.pathname === path;
 
     return (
         <s-section id="nav-section" heading="Menu">

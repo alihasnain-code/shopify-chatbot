@@ -1,23 +1,6 @@
 import { useState } from "react";
 
-export type FormFieldType =
-    | "text"
-    | "email"
-    | "phone"
-    | "number"
-    | "dropdown"
-    | "checkbox";
-
-export interface FormFieldDef {
-    id: string;
-    label: string;
-    type: FormFieldType;
-    placeholder: string;
-    options: string[];
-    required: boolean;
-}
-
-const FIELD_TYPE_LABELS: Record<FormFieldType, string> = {
+const FIELD_TYPE_LABELS = {
     text: "Text",
     email: "Email",
     phone: "Phone",
@@ -29,19 +12,14 @@ const FIELD_TYPE_LABELS: Record<FormFieldType, string> = {
 function createEmptyDraft() {
     return {
         label: "",
-        type: "text" as FormFieldType,
+        type: "text",
         placeholder: "",
         optionsText: "",
         required: false,
     };
 }
 
-type DraftErrors = {
-    label?: string;
-    optionsText?: string;
-};
-
-function generateId(): string {
+function generateId() {
     if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
         return crypto.randomUUID();
     }
@@ -68,16 +46,9 @@ export function FormFieldsEditor({
     modalId = "add-field-modal",
     showHeaderAddButton = true,
     fieldsError,
-}: {
-    fields: FormFieldDef[];
-    onChange: (fields: FormFieldDef[]) => void;
-    modalId?: string;
-    showHeaderAddButton?: boolean;
-    /** Server-side validation message covering the already-added fields list (e.g. from a tampered/invalid submission). */
-    fieldsError?: string;
 }) {
     const [draft, setDraft] = useState(createEmptyDraft());
-    const [draftErrors, setDraftErrors] = useState<DraftErrors>({});
+    const [draftErrors, setDraftErrors] = useState({});
 
     const resetDraft = () => {
         setDraft(createEmptyDraft());
@@ -89,7 +60,7 @@ export function FormFieldsEditor({
         (draft.type !== "dropdown" || draft.optionsText.trim().length > 0);
 
     const handleAddField = () => {
-        const nextErrors: DraftErrors = {};
+        const nextErrors = {};
         if (draft.label.trim().length === 0) {
             nextErrors.label = "Field label is required.";
         }
@@ -102,7 +73,7 @@ export function FormFieldsEditor({
             return;
         }
 
-        const newField: FormFieldDef = {
+        const newField = {
             id: generateId(),
             label: draft.label.trim(),
             type: draft.type,
@@ -121,11 +92,11 @@ export function FormFieldsEditor({
         resetDraft();
     };
 
-    const handleDeleteField = (id: string) => {
+    const handleDeleteField = (id) => {
         onChange(fields.filter((field) => field.id !== id));
     };
 
-    const handleMoveField = (index: number, direction: -1 | 1) => {
+    const handleMoveField = (index, direction) => {
         const targetIndex = index + direction;
         if (targetIndex < 0 || targetIndex >= fields.length) return;
 
@@ -214,7 +185,7 @@ export function FormFieldsEditor({
                         placeholder="e.g. Full Name"
                         value={draft.label}
                         error={draftErrors.label}
-                        onInput={(event: any) => {
+                        onInput={(event) => {
                             const value = event.target.value;
                             setDraft((current) => ({ ...current, label: value }));
                             if (draftErrors.label) {
@@ -226,10 +197,10 @@ export function FormFieldsEditor({
                     <s-select
                         label="Field Type"
                         value={draft.type}
-                        onChange={(event: any) =>
+                        onChange={(event) =>
                             setDraft((current) => ({
                                 ...current,
-                                type: event.target.value as FormFieldType,
+                                type: event.target.value,
                             }))
                         }
                     >
@@ -246,7 +217,7 @@ export function FormFieldsEditor({
                         label="Placeholder"
                         placeholder="e.g. Enter your name"
                         value={draft.placeholder}
-                        onInput={(event: any) =>
+                        onInput={(event) =>
                             setDraft((current) => ({ ...current, placeholder: event.target.value }))
                         }
                     ></s-text-field>
@@ -260,7 +231,7 @@ export function FormFieldsEditor({
                             placeholder="e.g. Option 1, Option 2"
                             value={draft.optionsText}
                             error={draftErrors.optionsText}
-                            onInput={(event: any) => {
+                            onInput={(event) => {
                                 const value = event.target.value;
                                 setDraft((current) => ({ ...current, optionsText: value }));
                                 if (draftErrors.optionsText) {
@@ -273,7 +244,7 @@ export function FormFieldsEditor({
                     <s-checkbox
                         label="Required field"
                         checked={draft.required}
-                        onChange={(event: any) =>
+                        onChange={(event) =>
                             setDraft((current) => ({ ...current, required: event.target.checked }))
                         }
                     ></s-checkbox>

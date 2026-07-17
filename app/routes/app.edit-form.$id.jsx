@@ -5,21 +5,18 @@ import {
     useLoaderData,
     useNavigation,
     useNavigate,
-    useSubmit,
-    type ActionFunctionArgs,
-    type HeadersFunction,
-    type LoaderFunctionArgs,
+    useSubmit
 } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
-import { FormFieldsEditor, type FormFieldDef } from "app/components/form-field-editor";
+import { FormFieldsEditor } from "app/components/form-field-editor";
 
 // NOTE: filename assumes react-router flat-routes dynamic segment syntax
 // (app.edit-form.$id.tsx -> /app/edit-form/:id). Rename to match your
 // routing convention if different.
 
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }) => {
     const { session } = await authenticate.admin(request);
 
     const formId = Number(params.id);
@@ -40,21 +37,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
             id: form.id,
             name: form.name,
             status: form.status,
-            fields: (JSON.parse(form.fields) as FormFieldDef[]) || [],
+            fields: (JSON.parse(form.fields)) || [],
         },
     };
-};
-
-type FormActionErrors = {
-    name?: string;
-    fields?: string;
 };
 
 // Checks every committed field has a label, and that dropdown fields have
 // at least one non-empty option. Runs server-side as the source of truth —
 // the Add Field modal also checks this client-side, but the fields array
 // arrives here as raw JSON and could be tampered with or submitted without JS.
-function validateFields(fields: FormFieldDef[]): string | undefined {
+function validateFields(fields) {
     for (let i = 0; i < fields.length; i++) {
         const field = fields[i];
         if (!field.label || String(field.label).trim().length === 0) {
@@ -70,7 +62,7 @@ function validateFields(fields: FormFieldDef[]): string | undefined {
     return undefined;
 }
 
-export const action = async ({ request, params }: ActionFunctionArgs) => {
+export const action = async ({ request, params }) => {
     const { session } = await authenticate.admin(request);
 
     const formId = Number(params.id);
@@ -90,9 +82,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
     const name = String(formData.get("name") || "").trim();
     const status = String(formData.get("status") || "active");
-    const fields = JSON.parse(String(formData.get("fields") || "[]")) as FormFieldDef[];
+    const fields = JSON.parse(String(formData.get("fields") || "[]"));
 
-    const errors: FormActionErrors = {};
+    const errors = {};
 
     if (!name) {
         errors.name = "Form name is required.";
@@ -131,8 +123,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 const SAVE_BAR_ID = "edit-form-save-bar";
 
 export default function Index() {
-    const { form } = useLoaderData<typeof loader>();
-    const actionData = useActionData<typeof action>();
+    const { form } = useLoaderData();
+    const actionData = useActionData();
     const navigation = useNavigation();
     const submit = useSubmit();
     const navigate = useNavigate();
@@ -140,7 +132,7 @@ export default function Index() {
 
     const [name, setName] = useState(form.name);
     const [status, setStatus] = useState(form.status);
-    const [fields, setFields] = useState<FormFieldDef[]>(form.fields);
+    const [fields, setFields] = useState(form.fields);
     const [isDirty, setIsDirty] = useState(false);
 
     useEffect(() => {
@@ -190,17 +182,17 @@ export default function Index() {
         }
     };
 
-    const handleNameInput = (event: any) => {
+    const handleNameInput = (event) => {
         setName(event.target.value);
         markDirty();
     };
 
-    const handleStatusChange = (event: any) => {
+    const handleStatusChange = (event) => {
         setStatus(event.target.value);
         markDirty();
     };
 
-    const handleFieldsChange = (nextFields: FormFieldDef[]) => {
+    const handleFieldsChange = (nextFields) => {
         setFields(nextFields);
         markDirty();
     };
@@ -313,6 +305,6 @@ export default function Index() {
     );
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
+export const headers = (headersArgs) => {
     return boundary.headers(headersArgs);
 };

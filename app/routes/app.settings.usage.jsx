@@ -1,8 +1,3 @@
-import type {
-    ActionFunctionArgs,
-    HeadersFunction,
-    LoaderFunctionArgs,
-} from "react-router";
 import { useLoaderData, useActionData, useSubmit, useNavigation } from "react-router";
 import { useState, useEffect } from "react";
 import { authenticate } from "../shopify.server";
@@ -11,7 +6,7 @@ import db from "../db.server";
 
 const ALLOWED_RESET_PERIODS = ["hour", "6-hour", "12-hour", "24-hour", "7-day"];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }) => {
     const { session } = await authenticate.admin(request);
 
     return db.usagesettings.upsert({
@@ -21,13 +16,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }) => {
     const { session } = await authenticate.admin(request);
 
     const formData = await request.formData();
-    const maxMessagesPerConversation = parseInt(formData.get("maxMessagesPerConversation") as string, 10);
-    const maxMessagesPerVisitor = parseInt(formData.get("maxMessagesPerVisitor") as string, 10);
-    const resetPeriod = formData.get("resetPeriod") as string;
+    const maxMessagesPerConversation = parseInt(formData.get("maxMessagesPerConversation"), 10);
+    const maxMessagesPerVisitor = parseInt(formData.get("maxMessagesPerVisitor"), 10);
+    const resetPeriod = formData.get("resetPeriod");
 
     if (!Number.isInteger(maxMessagesPerConversation) || maxMessagesPerConversation < 1 || maxMessagesPerConversation > 200) {
         return { error: "Max messages per chat conversation must be between 1 and 200." };
@@ -51,8 +46,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Usage() {
-    const settings = useLoaderData<typeof loader>();
-    const actionData = useActionData<typeof action>();
+    const settings = useLoaderData();
+    const actionData = useActionData();
     const navigation = useNavigation();
     const submit = useSubmit();
 
@@ -62,7 +57,7 @@ export default function Usage() {
     const isSaving = navigation.state === "submitting";
     const isDirty = JSON.stringify(formState) !== JSON.stringify(initialFormState);
 
-    function handleSave(e: React.FormEvent) {
+    function handleSave(e) {
         e.preventDefault();
         submit(
             {
@@ -79,7 +74,7 @@ export default function Usage() {
     }
 
     useEffect(() => {
-        const saveBar = document.getElementById("usage-save-bar") as any;
+        const saveBar = document.getElementById("usage-save-bar");
         if (!saveBar) return;
         isDirty ? saveBar.show() : saveBar.hide();
     }, [isDirty]);
@@ -106,7 +101,7 @@ export default function Usage() {
                     <s-number-field
                         autocomplete="off"
                         value={formState.maxMessagesPerConversation}
-                        onInput={(e: any) => setFormState({ ...formState, maxMessagesPerConversation: e.currentTarget.value })}
+                        onInput={(e) => setFormState({ ...formState, maxMessagesPerConversation: e.currentTarget.value })}
                         required
                         min={1}
                         max={200}
@@ -124,7 +119,7 @@ export default function Usage() {
                             required
                             autocomplete="off"
                             value={formState.maxMessagesPerVisitor}
-                            onInput={(e: any) => setFormState({ ...formState, maxMessagesPerVisitor: e.currentTarget.value })}
+                            onInput={(e) => setFormState({ ...formState, maxMessagesPerVisitor: e.currentTarget.value })}
                             min={1}
                             max={10000}
                             label="Max total messages per visitor"
@@ -133,7 +128,7 @@ export default function Usage() {
                             label="Reset period"
                             name="reset-period"
                             value={formState.resetPeriod}
-                            onChange={(e: any) => setFormState({ ...formState, resetPeriod: e.currentTarget.value })}
+                            onChange={(e) => setFormState({ ...formState, resetPeriod: e.currentTarget.value })}
                         >
                             <s-option value="hour">1 Hour</s-option>
                             <s-option value="6-hour">6 Hour</s-option>
@@ -150,4 +145,4 @@ export default function Usage() {
     );
 }
 
-export const headers: HeadersFunction = (headersArgs) => boundary.headers(headersArgs);
+export const headers = (headersArgs) => boundary.headers(headersArgs);

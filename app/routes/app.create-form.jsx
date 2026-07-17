@@ -3,30 +3,23 @@ import {
     redirect,
     useActionData,
     useSubmit,
-    type ActionFunctionArgs,
-    type HeadersFunction,
-    type LoaderFunctionArgs,
 } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
-import { FormFieldsEditor, type FormFieldDef } from "../components/form-field-editor";
+import { FormFieldsEditor } from "../components/form-field-editor";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }) => {
     await authenticate.admin(request);
     return null;
 };
 
-type FormActionErrors = {
-    name?: string;
-    fields?: string;
-};
 
 // Checks every committed field has a label, and that dropdown fields have
 // at least one non-empty option. Runs server-side as the source of truth —
 // the Add Field modal also checks this client-side, but the fields array
 // arrives here as raw JSON and could be tampered with or submitted without JS.
-function validateFields(fields: FormFieldDef[]): string | undefined {
+function validateFields(fields) {
     for (let i = 0; i < fields.length; i++) {
         const field = fields[i];
         if (!field.label || String(field.label).trim().length === 0) {
@@ -42,15 +35,15 @@ function validateFields(fields: FormFieldDef[]): string | undefined {
     return undefined;
 }
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }) => {
     const { session } = await authenticate.admin(request);
     const formData = await request.formData();
 
     const name = String(formData.get("name") || "").trim();
     const status = String(formData.get("status") || "active");
-    const fields = JSON.parse(String(formData.get("fields") || "[]")) as FormFieldDef[];
+    const fields = JSON.parse(String(formData.get("fields") || "[]"));
 
-    const errors: FormActionErrors = {};
+    const errors = {};
 
     if (!name) {
         errors.name = "Form name is required.";
@@ -92,14 +85,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Index() {
-    const actionData = useActionData<typeof action>();
+    const actionData = useActionData();
     const submit = useSubmit();
 
     const [name, setName] = useState("");
     const [status, setStatus] = useState("active");
-    const [fields, setFields] = useState<FormFieldDef[]>([]);
+    const [fields, setFields] = useState([]);
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (event) => {
         event.preventDefault();
 
         const formData = new FormData(event.currentTarget);
@@ -139,13 +132,13 @@ export default function Index() {
                                 name="name"
                                 value={name}
                                 error={actionData?.errors?.name}
-                                onInput={(event: any) => setName(event.target.value)}
+                                onInput={(event) => setName(event.target.value)}
                             ></s-text-field>
                             <s-select
                                 label="Status"
                                 name="status"
                                 value={status}
-                                onChange={(event: any) => setStatus(event.target.value)}
+                                onChange={(event) => setStatus(event.target.value)}
                             >
                                 <s-option value="active">Active</s-option>
                                 <s-option value="inactive">Inactive</s-option>
@@ -168,6 +161,6 @@ export default function Index() {
     );
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
+export const headers = (headersArgs) => {
     return boundary.headers(headersArgs);
 };

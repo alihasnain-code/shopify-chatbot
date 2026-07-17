@@ -1,8 +1,3 @@
-import type {
-    ActionFunctionArgs,
-    HeadersFunction,
-    LoaderFunctionArgs,
-} from "react-router";
 import { useLoaderData, useActionData, useSubmit, useNavigation } from "react-router";
 import { useState, useEffect } from "react";
 import { authenticate } from "../shopify.server";
@@ -12,7 +7,7 @@ import db from "../db.server";
 const MAX_QUESTIONS = 4;
 const MAX_QUESTION_LENGTH = 100;
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }) => {
     const { session } = await authenticate.admin(request);
 
     return db.starterquestion.findMany({
@@ -21,22 +16,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-
-    console.log("Wokerd before the session");
-
+export const action = async ({ request }) => {
     const { session } = await authenticate.admin(request);
 
-    console.log("Wokerd after form session");
-
     const formData = await request.formData();
-    const raw = formData.get("questions") as string;
+    const raw = formData.get("questions");
 
-
-    console.log("Wokerd after form data");
-
-
-    let questions: unknown;
+    let questions;
     try {
         questions = JSON.parse(raw);
     } catch {
@@ -71,27 +57,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }),
     ]);
 
-    console.log("Wokerd after DB PUSH ");
-
-
     return { success: true };
 };
 
 export default function StarterQuestions() {
-    const questions = useLoaderData<typeof loader>();
-    const actionData = useActionData<typeof action>();
+    const questions = useLoaderData();
+    const actionData = useActionData();
     const navigation = useNavigation();
     const submit = useSubmit();
 
-    const initial = questions.length ? questions.map((q: any) => q.question) : [""];
+    const initial = questions.length ? questions.map((q) => q.question) : [""];
 
-    const [initialFormState, setInitialFormState] = useState<string[]>(initial);
-    const [formState, setFormState] = useState<string[]>(initial);
+    const [initialFormState, setInitialFormState] = useState(initial);
+    const [formState, setFormState] = useState(initial);
 
     const isSaving = navigation.state === "submitting";
     const isDirty = JSON.stringify(formState) !== JSON.stringify(initialFormState);
 
-    function handleSave(e: React.FormEvent) {
+    function handleSave(e) {
         e.preventDefault();
         submit(
             { questions: JSON.stringify(formState.filter((q) => q.trim().length > 0)) },
@@ -103,13 +86,13 @@ export default function StarterQuestions() {
         setFormState(initialFormState);
     }
 
-    function updateQuestion(index: number, value: string) {
+    function updateQuestion(index, value) {
         const next = [...formState];
         next[index] = value;
         setFormState(next);
     }
 
-    function removeQuestion(index: number) {
+    function removeQuestion(index) {
         setFormState(formState.filter((_, i) => i !== index));
     }
 
@@ -119,7 +102,7 @@ export default function StarterQuestions() {
     }
 
     useEffect(() => {
-        const saveBar = document.getElementById("starter-questions-save-bar") as any;
+        const saveBar = document.getElementById("starter-questions-save-bar");
         if (!saveBar) return;
         isDirty ? saveBar.show() : saveBar.hide();
     }, [isDirty]);
@@ -154,7 +137,7 @@ export default function StarterQuestions() {
                                             placeholder="Where is my order?"
                                             maxLength={MAX_QUESTION_LENGTH}
                                             value={question}
-                                            onInput={(e: any) => updateQuestion(index, e.currentTarget.value)}
+                                            onInput={(e) => updateQuestion(index, e.currentTarget.value)}
                                         ></s-text-field>
                                     </div>
                                     <div style={{ marginBottom: "3px" }}>
@@ -187,4 +170,4 @@ export default function StarterQuestions() {
     );
 }
 
-export const headers: HeadersFunction = (headersArgs) => boundary.headers(headersArgs);
+export const headers = (headersArgs) => boundary.headers(headersArgs);

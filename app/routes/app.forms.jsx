@@ -3,24 +3,13 @@ import { formatDate } from "app/utils";
 import {
     useFetcher,
     useLoaderData,
-    useNavigate,
-    type ActionFunctionArgs,
-    type HeadersFunction,
-    type LoaderFunctionArgs,
+    useNavigate
 } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 
-type FormRow = {
-    id: number;
-    name: string;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
-};
-
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }) => {
     const { session } = await authenticate.admin(request);
 
     const forms = await db.form.findMany({
@@ -35,11 +24,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             status: form.status,
             createdAt: form.createdAt.toISOString(),
             updatedAt: form.updatedAt.toISOString(),
-        })) satisfies FormRow[],
+        })),
     };
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }) => {
     const { session } = await authenticate.admin(request);
     const formData = await request.formData();
     const intent = formData.get("intent");
@@ -47,7 +36,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (intent === "reorder") {
         const orderedIds = JSON.parse(
             String(formData.get("orderedIds") || "[]"),
-        ) as number[];
+        );
 
         // Each updateMany is scoped to this session so a shop can never
         // reorder (or touch) another shop's forms.
@@ -86,14 +75,8 @@ function SortableFormRow({
     onEdit,
     onReorder,
     onRequestDelete,
-}: {
-    row: FormRow;
-    index: number;
-    onEdit: (id: number) => void;
-    onReorder: (fromIndex: number, toIndex: number) => void;
-    onRequestDelete: (id: number, name: string) => void;
 }) {
-    const rowRef = useRef<HTMLElement | null>(null);
+    const rowRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
 
@@ -101,7 +84,7 @@ function SortableFormRow({
         const node = rowRef.current;
         if (!node) return;
 
-        const handleDragOver = (event: DragEvent) => {
+        const handleDragOver = (event) => {
             event.preventDefault();
             if (event.dataTransfer) {
                 event.dataTransfer.dropEffect = "move";
@@ -113,7 +96,7 @@ function SortableFormRow({
             setIsDragOver(false);
         };
 
-        const handleDrop = (event: DragEvent) => {
+        const handleDrop = (event) => {
             event.preventDefault();
             setIsDragOver(false);
 
@@ -138,7 +121,7 @@ function SortableFormRow({
     }, [index, onReorder]);
 
     return (
-        <s-table-row ref={rowRef as any}>
+        <s-table-row ref={rowRef}>
             <s-table-cell>
                 <span
                     className="drag-handle"
@@ -188,13 +171,13 @@ function SortableFormRow({
 
 export default function Index() {
     const navigate = useNavigate();
-    const { forms } = useLoaderData<typeof loader>();
+    const { forms } = useLoaderData();
 
     const reorderFetcher = useFetcher();
     const deleteFetcher = useFetcher();
 
-    const [rows, setRows] = useState<FormRow[]>(forms);
-    const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+    const [rows, setRows] = useState(forms);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     // Re-sync local order whenever the loader gives us fresh data
     // (e.g. after a delete revalidates the list).
@@ -202,11 +185,11 @@ export default function Index() {
         setRows(forms);
     }, [forms]);
 
-    const handleEdit = (id: number) => {
+    const handleEdit = (id) => {
         navigate(`/app/edit-form/${id}`);
     };
 
-    const handleRequestDelete = (id: number, name: string) => {
+    const handleRequestDelete = (id, name) => {
         setDeleteTarget({ id, name });
     };
 
@@ -220,7 +203,7 @@ export default function Index() {
     };
 
     const handleReorder = useCallback(
-        (fromIndex: number, toIndex: number) => {
+        (fromIndex, toIndex) => {
             setRows((current) => {
                 if (
                     fromIndex === toIndex ||
@@ -342,6 +325,6 @@ export default function Index() {
     );
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
+export const headers = (headersArgs) => {
     return boundary.headers(headersArgs);
 };
