@@ -643,6 +643,7 @@
         this.input = root.querySelector("#ai-chatbot-input");
         this.sendBtn = root.querySelector("#ai-chatbot-send");
         this.overlay = root.querySelector("#ai-chatbot-overlay");
+        this._starterQuestionsRequestId = 0;
 
         this.shop = root.dataset.shop || window.location.hostname;
         // this.shop = "shomi-official.myshopify.com";
@@ -766,16 +767,18 @@
         el.className = "ai-chatbot__empty-state";
         el.innerHTML =
             '<h3 class="ai-chatbot__empty-state-title">Start Conversation</h3>' +
-            '<p class="ai-chatbot__empty-state-text">Welcome! Type your first message below.</p>';
+            '<span class="ai-chatbot__empty-state-text">Welcome! Type your first message below.</span>';
         this.messagesEl.appendChild(el);
     };
 
     /* ---- Starter questions -------------------------------------------- */
     AIChatbot.prototype._loadStarterQuestions = function () {
         var self = this;
+        var requestId = ++this._starterQuestionsRequestId;
         this.api
             .fetchStarterQuestions()
             .then(function (payload) {
+                if (requestId !== self._starterQuestionsRequestId) return;
                 var questions = (payload && payload.data) || [];
                 if (!questions.length) {
                     self._renderEmptyState();
@@ -898,6 +901,7 @@
 
     /* ---- Clear (local only — never touches the DB) -------------------- */
     AIChatbot.prototype.clearConversation = function () {
+        if (!this.conversationId && !this.messagesEl.children.length) return;
         this.storage.clearConversationId();
         this.conversationId = null;
         this.messagesEl.innerHTML = "";
