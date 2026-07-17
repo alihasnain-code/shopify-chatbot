@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
-import { formatDate } from "app/utils";
+import { formatDate } from "../utils";
 import { policySyncQueue } from "../queue";
 
 const ALLOWED_TONES = ["standard", "enthusiastic"];
