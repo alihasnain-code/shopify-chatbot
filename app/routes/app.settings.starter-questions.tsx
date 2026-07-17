@@ -22,7 +22,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+
+    console.log("Wokerd before the session");
+
     const { session } = await authenticate.admin(request);
+
+    console.log("Wokerd after form session");
 
     const formData = await request.formData();
     const raw = formData.get("questions") as string;
