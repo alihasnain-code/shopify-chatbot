@@ -769,22 +769,25 @@
             '<h3 class="ai-chatbot__empty-state-title">Start Conversation</h3>' +
             '<span class="ai-chatbot__empty-state-text">Welcome! Type your first message below.</span>';
         this.messagesEl.appendChild(el);
+        return el;
     };
 
     /* ---- Starter questions -------------------------------------------- */
     AIChatbot.prototype._loadStarterQuestions = function () {
         var self = this;
         var requestId = ++this._starterQuestionsRequestId;
+
+        var placeholder = this._renderEmptyState();
+
         this.api
             .fetchStarterQuestions()
             .then(function (payload) {
                 if (requestId !== self._starterQuestionsRequestId) return;
                 var questions = (payload && payload.data) || [];
-                if (!questions.length) {
-                    self._renderEmptyState();
-                    return;
+                if (questions.length) {
+                    if (placeholder && placeholder.parentNode) placeholder.remove();
+                    self._renderStarterQuestions(questions);
                 }
-                self._renderStarterQuestions(questions);
             })
             .catch(function () {
                 /* no starter questions available — fail silently */
