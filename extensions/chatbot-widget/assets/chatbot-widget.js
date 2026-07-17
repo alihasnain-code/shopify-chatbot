@@ -644,8 +644,8 @@
         this.sendBtn = root.querySelector("#ai-chatbot-send");
         this.overlay = root.querySelector("#ai-chatbot-overlay");
 
-        // this.shop = root.dataset.shop || window.location.hostname;
-        this.shop = "shomi-official.myshopify.com";
+        this.shop = root.dataset.shop || window.location.hostname;
+        // this.shop = "shomi-official.myshopify.com";
 
         var AI_CHATBOT_API_BASE = "/apps/ai-chatbot/api/v1";
 
