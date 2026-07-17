@@ -27,6 +27,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const formData = await request.formData();
     const raw = formData.get("questions") as string;
 
+
+    console.log("Wokerd after form data");
+
+
     let questions: unknown;
     try {
         questions = JSON.parse(raw);
@@ -61,6 +65,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             })),
         }),
     ]);
+
+    console.log("Wokerd after DB PUSH ");
+
 
     return { success: true };
 };
