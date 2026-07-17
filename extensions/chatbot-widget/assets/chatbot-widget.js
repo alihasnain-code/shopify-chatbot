@@ -108,6 +108,14 @@
         });
     };
 
+    AIChatbotAPI.prototype.fetchStarterQuestions = function () {
+        var url = this.apiBase + "/questions/" + encodeURIComponent(this.shop);
+        return fetch(url).then(function (res) {
+            if (!res.ok) throw new Error("Failed to load starter questions");
+            return res.json();
+        });
+    };
+
     AIChatbotAPI.prototype.addToCart = function (payload) {
         return fetch(this.apiBase + "/cart/add", {
             method: "POST",
@@ -121,14 +129,6 @@
                 return data;
             });
         });
-    };
-
-    AIChatbotAPI.prototype.fetchStarterQuestions = function () {
-        return fetch(this.apiBase + '/questions/' + encodeURIComponent(this.shop))
-            .then(function (res) {
-                if (!res.ok) throw new Error('Failed to load starter questions');
-                return res.json();
-            });
     };
 
     // Streams /chat via fetch + ReadableStream (SSE format, but POST body
@@ -643,9 +643,10 @@
         this.input = root.querySelector("#ai-chatbot-input");
         this.sendBtn = root.querySelector("#ai-chatbot-send");
         this.overlay = root.querySelector("#ai-chatbot-overlay");
+        this._starterQuestionsRequestId = 0;
 
-        // this.shop = root.dataset.shop || window.location.hostname;
-        this.shop = "shomi-official.myshopify.com";
+        this.shop = root.dataset.shop || window.location.hostname;
+        // this.shop = "shomi-official.myshopify.com";
 
         var AI_CHATBOT_API_BASE = "/apps/ai-chatbot/api/v1";
 
@@ -758,45 +759,78 @@
     };
 
     AIChatbot.prototype._renderWelcome = function () {
-        this._appendBubble("bot", this.welcomeMessage);
+        this._loadStarterQuestions();
+    };
+
+    AIChatbot.prototype._renderEmptyState = function () {
+        var el = document.createElement("div");
+        el.className = "ai-chatbot__empty-state";
+        el.innerHTML =
+            '<h3 class="ai-chatbot__empty-state-title">Start Conversation</h3>' +
+            '<span class="ai-chatbot__empty-state-text">Welcome! Type your first message below.</span>';
+        this.messagesEl.appendChild(el);
+        return el;
+    };
+
+    // Removes the "Start Conversation" fallback (and/or the starter
+    // questions block, if still present) the moment a real conversation
+    // begins — whether the user typed their own message or tapped a
+    // starter question. Safe to call any time; no-op if neither exists.
+    AIChatbot.prototype._clearWelcomeUI = function () {
+        var empty = this.messagesEl.querySelector(".ai-chatbot__empty-state");
+        if (empty) empty.remove();
+        var starters = this.messagesEl.querySelector(".ai-chatbot__starter-questions");
+        if (starters) starters.remove();
+    };
+
+    /* ---- Starter questions -------------------------------------------- */
+    AIChatbot.prototype._loadStarterQuestions = function () {
         var self = this;
-        this.api.fetchStarterQuestions()
+        var requestId = ++this._starterQuestionsRequestId;
+
+        var placeholder = this._renderEmptyState();
+
+        this.api
+            .fetchStarterQuestions()
             .then(function (payload) {
-                if (!payload.success || !payload.data || !payload.data.length) return;
-                self._renderStarterQuestions(payload.data);
+                if (requestId !== self._starterQuestionsRequestId) return;
+                var questions = (payload && payload.data) || [];
+                if (questions.length) {
+                    if (placeholder && placeholder.parentNode) placeholder.remove();
+                    self._renderStarterQuestions(questions);
+                }
             })
-            .catch(function () { /* fail silently — widget still works without chips */ });
+            .catch(function () {
+                /* no starter questions available — fail silently */
+            });
     };
 
     AIChatbot.prototype._renderStarterQuestions = function (questions) {
         var self = this;
-        var container = document.createElement('div');
-        container.className = 'ai-chatbot__starter-questions';
+
+        var wrap = document.createElement("div");
+        wrap.className = "ai-chatbot__starter-questions";
 
         questions.forEach(function (q) {
-            var btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'ai-chatbot__starter-question';
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "ai-chatbot__starter-question";
             btn.textContent = q.question;
-            btn.addEventListener('click', function () {
-                self.input.value = q.question;
-                self._autoResizeInput();
-                self.sendBtn.disabled = false;
-                self._handleSend();
+            btn.addEventListener("click", function () {
+                if (self.isBusy) return;
+                wrap.remove();
+                self._sendStarterQuestion(q.question);
             });
-            container.appendChild(btn);
+            wrap.appendChild(btn);
         });
 
-        this.messagesEl.appendChild(container);
+        this.messagesEl.appendChild(wrap);
         this._scrollToBottom();
-        this.starterQuestionsEl = container;
     };
 
-    AIChatbot.prototype._dismissStarterQuestions = function () {
-        if (this.starterQuestionsEl && this.starterQuestionsEl.parentNode) {
-            this.starterQuestionsEl.remove();
-        }
-        this.starterQuestionsEl = null;
+    AIChatbot.prototype._sendStarterQuestion = function (text) {
+        this.input.value = text;
+        this._handleSend();
     };
 
     AIChatbot.prototype._renderBotTurnFromHistory = function (turn) {
@@ -881,10 +915,10 @@
 
     /* ---- Clear (local only — never touches the DB) -------------------- */
     AIChatbot.prototype.clearConversation = function () {
+        if (!this.conversationId && !this.messagesEl.children.length) return;
         this.storage.clearConversationId();
         this.conversationId = null;
         this.messagesEl.innerHTML = "";
-        this.starterQuestionsEl = null;
         this._renderWelcome();
     };
 
@@ -911,7 +945,11 @@
         var text = this.input.value.trim();
         if (!text || this.isBusy) return;
 
-        this._dismissStarterQuestions();
+        // A real conversation is starting now — the "Start Conversation"
+        // fallback (and/or any leftover starter-question chips) no longer
+        // apply, whether this came from typed input or a starter-question tap.
+        this._clearWelcomeUI();
+
         this._appendBubble("user", text);
         this.input.value = "";
         this._autoResizeInput();
