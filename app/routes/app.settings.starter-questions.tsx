@@ -42,12 +42,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         .map((q) => (typeof q === "string" ? q.trim() : ""))
         .filter((q) => q.length > 0);
 
-    if (cleaned.length > MAX_QUESTIONS) {
-        return { error: `You can only add up to ${MAX_QUESTIONS} starter questions.` };
+    if (cleaned.length > 4) {
+        return { error: `You can only add up to ${4} starter questions.` };
     }
 
-    if (cleaned.some((q) => q.length > MAX_QUESTION_LENGTH)) {
-        return { error: `Each starter question must be ${MAX_QUESTION_LENGTH} characters or fewer.` };
+    if (cleaned.some((q) => q.length > 100)) {
+        return { error: `Each starter question must be ${100} characters or fewer.` };
     }
 
     // Replace wholesale — simplest way to keep `position` in sync with on-screen order.
