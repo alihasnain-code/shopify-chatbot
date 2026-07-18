@@ -29,16 +29,17 @@ model conversation {
 }
 
 model form {
-  id        Int      @id @default(autoincrement())
-  sessionId String
-  name      String
-  status    String   @default("active")
-  fields    String   @db.LongText
-  version   Int      @default(1)
-  position  Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  session   session  @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "Form_sessionId_fkey")
+  id            Int             @id @default(autoincrement())
+  sessionId     String
+  name          String
+  status        String          @default("active")
+  fields        String          @db.LongText
+  version       Int             @default(1)
+  position      Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  session       session         @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "Form_sessionId_fkey")
+  formResponses form_response[]
 
   @@unique([sessionId, name], map: "Form_sessionId_name_key")
   @@index([sessionId], map: "Form_sessionId_idx")
@@ -89,6 +90,7 @@ model session {
   starterquestion     starterquestion[]
   usagesettings       usagesettings?
   userConfigs         user_configs?
+  formResponses       form_response[]
 }
 
 model starterquestion {
@@ -130,4 +132,15 @@ model user_configs {
   session        session    @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "UserConfigs_sessionId_fkey")
 
   @@index([sessionId], map: "UserConfigs_sessionId_idx")
+}
+
+model form_response {
+  id        Int      @id @default(autoincrement())
+  formId    Int
+  sessionId String
+  data      String   @db.Text
+  createdAt DateTime @default(now())
+
+  form    form    @relation(fields: [formId], references: [id])
+  session session @relation(fields: [sessionId], references: [id])
 }
