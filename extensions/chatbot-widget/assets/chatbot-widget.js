@@ -87,6 +87,36 @@
     };
 
     /* ------------------------------------------------------------------
+     * AIChatbotFormStorage — remembers whether the pre-chat form flow has
+     * already been completed, per shop. Persists across page loads and
+     * "clear conversation" (which only clears the conversationId, never
+     * this flag) so a returning/cleared visitor is never asked again.
+     * ------------------------------------------------------------------ */
+    function AIChatbotFormStorage(shop) {
+        this.key = "ai-chatbot-forms-submitted:" + shop;
+    }
+    AIChatbotFormStorage.prototype.isSubmitted = function () {
+        try {
+            var raw = window.localStorage.getItem(this.key);
+            if (!raw) return false;
+            var parsed = JSON.parse(raw);
+            return !!(parsed && parsed.submitted);
+        } catch (e) {
+            return false;
+        }
+    };
+    AIChatbotFormStorage.prototype.markSubmitted = function () {
+        try {
+            window.localStorage.setItem(
+                this.key,
+                JSON.stringify({ submitted: true, submittedAt: new Date().toISOString() })
+            );
+        } catch (e) {
+            /* private mode / quota — fail silently */
+        }
+    };
+
+    /* ------------------------------------------------------------------
      * AIChatbotAPI — talks to the backend
      * ------------------------------------------------------------------ */
     function AIChatbotAPI(apiBase, shop) {
@@ -112,6 +142,14 @@
         var url = this.apiBase + "/questions/" + encodeURIComponent(this.shop);
         return fetch(url).then(function (res) {
             if (!res.ok) throw new Error("Failed to load starter questions");
+            return res.json();
+        });
+    };
+
+    AIChatbotAPI.prototype.fetchForms = function () {
+        var url = this.apiBase + "/forms/" + encodeURIComponent(this.shop);
+        return fetch(url).then(function (res) {
+            if (!res.ok) throw new Error("Failed to load forms");
             return res.json();
         });
     };
@@ -648,6 +686,11 @@
         this._starterQuestionsCache = null;
         this._starterQuestionsFetched = false;
 
+        this._formsCache = null;
+        this._formsFetched = false;
+        this._forms = [];
+        this._currentFormIndex = 0;
+
         this.shop = root.dataset.shop || window.location.hostname;
         // this.shop = "shomi-official.myshopify.com";
 
@@ -655,6 +698,7 @@
 
         this.apiBase = AI_CHATBOT_API_BASE;
         this.storage = new AIChatbotStorage(this.shop);
+        this.formStorage = new AIChatbotFormStorage(this.shop);
         this.api = new AIChatbotAPI(this.apiBase, this.shop);
 
         this.conversationId = this.storage.getConversationId();
@@ -733,7 +777,7 @@
         var self = this;
 
         if (!this.conversationId) {
-            this._renderWelcome();
+            this._initializeWelcomeFlow();
             return;
         }
 
@@ -765,6 +809,28 @@
         this._loadStarterQuestions();
     };
 
+    // Entry point for any fresh (no-conversationId) render: checks whether
+    // a pre-chat form flow needs to run first. If forms exist and haven't
+    // been submitted yet, the form flow takes over the messages area and
+    // the normal welcome/starter-questions screen is deferred until it's
+    // done. Otherwise behavior is unchanged from before forms existed.
+    AIChatbot.prototype._initializeWelcomeFlow = function () {
+        var self = this;
+
+        if (this.formStorage.isSubmitted()) {
+            this._renderWelcome();
+            return;
+        }
+
+        this._loadForms(function (forms) {
+            if (forms && forms.length) {
+                self._enterFormMode(forms);
+            } else {
+                self._renderWelcome();
+            }
+        });
+    };
+
     AIChatbot.prototype._renderEmptyState = function () {
         var el = document.createElement("div");
         el.className = "ai-chatbot__empty-state";
@@ -784,6 +850,202 @@
         if (empty) empty.remove();
         var starters = this.messagesEl.querySelector(".ai-chatbot__starter-questions");
         if (starters) starters.remove();
+    };
+
+    /* ---- Pre-chat form flow -------------------------------------------
+     * Shows merchant-defined form(s) at the bottom of the widget before
+     * any conversation can start. One form: just that form + "Start
+     * Conversation". Multiple forms: shown one at a time with "Next",
+     * and "Start Conversation" on the last one. Once completed, the flag
+     * persists in localStorage so the same visitor never sees it again
+     * (page reloads, "clear conversation", and later visits all skip it).
+     * No server submission yet — completing the flow just records the
+     * date/time locally.
+     * -------------------------------------------------------------------- */
+    AIChatbot.prototype._loadForms = function (callback) {
+        var self = this;
+
+        if (this._formsFetched) {
+            callback(this._formsCache || []);
+            return;
+        }
+
+        this.api
+            .fetchForms()
+            .then(function (payload) {
+                var forms = (payload && payload.data) || [];
+                self._formsFetched = true;
+                self._formsCache = forms;
+                callback(forms);
+            })
+            .catch(function () {
+                // Fetch failed — don't mark as fetched, so the next
+                // attempt (e.g. reopening the widget) retries. Fall back
+                // to the normal welcome screen for now rather than
+                // blocking the widget entirely.
+                callback([]);
+            });
+    };
+
+    AIChatbot.prototype._enterFormMode = function (forms) {
+        this._forms = forms;
+        this._currentFormIndex = 0;
+        this.root.classList.add("is-form-mode");
+        this._renderCurrentForm();
+    };
+
+    AIChatbot.prototype._renderCurrentForm = function () {
+        var self = this;
+        this.messagesEl.innerHTML = "";
+
+        var form = this._forms[this._currentFormIndex];
+        var isLast = this._currentFormIndex === this._forms.length - 1;
+
+        var wrap = document.createElement("div");
+        wrap.className = "ai-chatbot__form-wrap";
+
+        var formEl = document.createElement("form");
+        formEl.className = "ai-chatbot__dynamic-form";
+        formEl.noValidate = false;
+
+        var heading = document.createElement("h3");
+        heading.className = "ai-chatbot__form-title";
+        heading.textContent = form.name;
+        formEl.appendChild(heading);
+
+        if (this._forms.length > 1) {
+            var progress = document.createElement("span");
+            progress.className = "ai-chatbot__form-progress";
+            progress.textContent =
+                "Form " + (this._currentFormIndex + 1) + " of " + this._forms.length;
+            formEl.appendChild(progress);
+        }
+
+        (form.fields || []).forEach(function (field) {
+            formEl.appendChild(self._buildFormField(field));
+        });
+
+        var actions = document.createElement("div");
+        actions.className = "ai-chatbot__form-actions";
+
+        var actionBtn = document.createElement("button");
+        actionBtn.type = "submit";
+        actionBtn.className = "ai-chatbot__form-submit-btn";
+        actionBtn.textContent = isLast ? "Start Conversation" : "Next";
+        actions.appendChild(actionBtn);
+        formEl.appendChild(actions);
+
+        formEl.addEventListener("submit", function (e) {
+            e.preventDefault();
+            // Native HTML5 validation only — no custom JS validation logic.
+            if (typeof formEl.reportValidity === "function" && !formEl.reportValidity()) {
+                return;
+            }
+            self._handleFormAdvance();
+        });
+
+        wrap.appendChild(formEl);
+        this.messagesEl.appendChild(wrap);
+        this._scrollToBottom();
+    };
+
+    AIChatbot.prototype._buildFormField = function (field) {
+        var group = document.createElement("div");
+        group.className = "ai-chatbot__form-field";
+
+        if (field.type === "checkbox") {
+            var checkboxLabel = document.createElement("label");
+            checkboxLabel.className = "ai-chatbot__form-checkbox-label";
+
+            var checkboxInput = document.createElement("input");
+            checkboxInput.type = "checkbox";
+            checkboxInput.name = field.id;
+            if (field.required) checkboxInput.required = true;
+
+            var checkboxText = document.createElement("span");
+            checkboxText.textContent = field.label;
+
+            checkboxLabel.appendChild(checkboxInput);
+            checkboxLabel.appendChild(checkboxText);
+            group.appendChild(checkboxLabel);
+            return group;
+        }
+
+        var labelEl = document.createElement("label");
+        labelEl.className = "ai-chatbot__form-label";
+        labelEl.setAttribute("for", "ai-chatbot-field-" + field.id);
+        labelEl.textContent = field.label + (field.required ? " *" : "");
+        group.appendChild(labelEl);
+
+        if (field.type === "dropdown") {
+            var select = document.createElement("select");
+            select.id = "ai-chatbot-field-" + field.id;
+            select.name = field.id;
+            select.className = "ai-chatbot__form-input";
+            if (field.required) select.required = true;
+
+            var placeholderOpt = document.createElement("option");
+            placeholderOpt.value = "";
+            placeholderOpt.textContent = field.placeholder || "Select an option";
+            placeholderOpt.disabled = true;
+            placeholderOpt.selected = true;
+            select.appendChild(placeholderOpt);
+
+            (field.options || []).forEach(function (option) {
+                var optionEl = document.createElement("option");
+                optionEl.value = option;
+                optionEl.textContent = option;
+                select.appendChild(optionEl);
+            });
+
+            group.appendChild(select);
+            return group;
+        }
+
+        var input = document.createElement("input");
+        input.id = "ai-chatbot-field-" + field.id;
+        input.name = field.id;
+        input.className = "ai-chatbot__form-input";
+        input.placeholder = field.placeholder || "";
+        if (field.required) input.required = true;
+
+        switch (field.type) {
+            case "email":
+                input.type = "email";
+                break;
+            case "phone":
+                input.type = "tel";
+                break;
+            case "number":
+                input.type = "number";
+                break;
+            default:
+                input.type = "text";
+        }
+
+        group.appendChild(input);
+        return group;
+    };
+
+    AIChatbot.prototype._handleFormAdvance = function () {
+        var isLast = this._currentFormIndex === this._forms.length - 1;
+        if (!isLast) {
+            this._currentFormIndex += 1;
+            this._renderCurrentForm();
+            return;
+        }
+        this._completeFormFlow();
+    };
+
+    // No backend submission logic exists yet — just record that the flow
+    // was completed (and when) locally, then hand off to the normal
+    // welcome screen with all the usual chrome (input, clear, expand)
+    // restored.
+    AIChatbot.prototype._completeFormFlow = function () {
+        this.formStorage.markSubmitted();
+        this.root.classList.remove("is-form-mode");
+        this.messagesEl.innerHTML = "";
+        this._renderWelcome();
     };
 
     /* ---- Starter questions -------------------------------------------- */
@@ -935,7 +1197,7 @@
         this.storage.clearConversationId();
         this.conversationId = null;
         this.messagesEl.innerHTML = "";
-        this._renderWelcome();
+        this._initializeWelcomeFlow();
     };
 
     AIChatbot.prototype._autoResizeInput = function () {

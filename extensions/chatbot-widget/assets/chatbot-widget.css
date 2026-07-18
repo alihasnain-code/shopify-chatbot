@@ -1096,3 +1096,122 @@
     font-size: 13.5px;
     color: var(--ai-chatbot-muted);
 }
+
+/* --------------------------------------------------------------------------
+   Pre-chat form flow — while active, the visitor can't type or reset the
+   conversation yet, so the input footer, clear icon, and expand/collapse
+   toggle are hidden entirely.
+   -------------------------------------------------------------------------- */
+#ai-chatbot-root.is-form-mode #ai-chatbot-clear,
+#ai-chatbot-root.is-form-mode #ai-chatbot-expand,
+#ai-chatbot-root.is-form-mode .ai-chatbot__footer {
+    display: none !important;
+}
+
+/* Anchored to the bottom of the widget (not centered, unlike the empty
+   state) since forms need to read top-to-bottom like a normal form. */
+.ai-chatbot__form-wrap {
+    margin-top: auto;
+    width: 100%;
+}
+
+.ai-chatbot__dynamic-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--ai-chatbot-border);
+    border-radius: 14px;
+    background: var(--ai-chatbot-bg);
+    animation: ai-chatbot-msg-in 0.28s var(--ai-chatbot-ease) both;
+}
+
+.ai-chatbot__form-title {
+    margin: 0;
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.ai-chatbot__form-progress {
+    margin-top: -6px;
+    font-size: 11.5px;
+    color: var(--ai-chatbot-muted);
+}
+
+.ai-chatbot__form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.ai-chatbot__form-label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ai-chatbot-text);
+}
+
+.ai-chatbot__form-input {
+    width: 100%;
+    border: 1px solid var(--ai-chatbot-border);
+    border-radius: 10px;
+    padding: 9px 11px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: var(--ai-chatbot-text);
+    background: var(--ai-chatbot-bg);
+    transition: border-color 0.15s var(--ai-chatbot-ease-fast), box-shadow 0.15s var(--ai-chatbot-ease-fast);
+}
+
+.ai-chatbot__form-input:focus {
+    outline: none;
+    border-color: var(--ai-chatbot-accent);
+    box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.08);
+}
+
+select.ai-chatbot__form-input {
+    appearance: auto;
+    cursor: pointer;
+}
+
+.ai-chatbot__form-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.ai-chatbot__form-checkbox-label input {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--ai-chatbot-accent);
+    cursor: pointer;
+}
+
+.ai-chatbot__form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+.ai-chatbot__form-submit-btn {
+    border: none;
+    border-radius: 10px;
+    padding: 9px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: inherit;
+    background: var(--ai-chatbot-accent);
+    color: var(--ai-chatbot-bg);
+    cursor: pointer;
+    transition: transform 0.15s var(--ai-chatbot-ease-fast), opacity 0.15s var(--ai-chatbot-ease-fast);
+}
+
+.ai-chatbot__form-submit-btn:hover {
+    transform: translateY(-1px);
+}
+
+.ai-chatbot__form-submit-btn:active {
+    transform: scale(0.96);
+}
