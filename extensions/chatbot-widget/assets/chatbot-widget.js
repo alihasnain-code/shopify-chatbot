@@ -87,33 +87,45 @@
     };
 
     /* ------------------------------------------------------------------
-     * AIChatbotFormStorage — remembers whether the pre-chat form flow has
-     * already been completed, per shop. Persists across page loads and
-     * "clear conversation" (which only clears the conversationId, never
-     * this flag) so a returning/cleared visitor is never asked again.
+     * AIChatbotFormStorage — remembers, PER FORM, the version last
+     * submitted by this visitor (per shop). This is what lets us re-show
+     * a form when a merchant edits its name/fields (server bumps
+     * `version`) while still skipping forms that are unchanged since the
+     * visitor last answered them — rather than a single all-or-nothing
+     * flag. Persists across page loads and "clear conversation" (which
+     * only clears the conversationId, never this).
      * ------------------------------------------------------------------ */
     function AIChatbotFormStorage(shop) {
         this.key = "ai-chatbot-forms-submitted:" + shop;
     }
-    AIChatbotFormStorage.prototype.isSubmitted = function () {
+    AIChatbotFormStorage.prototype._read = function () {
         try {
             var raw = window.localStorage.getItem(this.key);
-            if (!raw) return false;
+            if (!raw) return {};
             var parsed = JSON.parse(raw);
-            return !!(parsed && parsed.submitted);
+            return parsed && typeof parsed === "object" ? parsed : {};
         } catch (e) {
-            return false;
+            return {};
         }
     };
-    AIChatbotFormStorage.prototype.markSubmitted = function () {
+    AIChatbotFormStorage.prototype._write = function (data) {
         try {
-            window.localStorage.setItem(
-                this.key,
-                JSON.stringify({ submitted: true, submittedAt: new Date().toISOString() })
-            );
+            window.localStorage.setItem(this.key, JSON.stringify(data));
         } catch (e) {
             /* private mode / quota — fail silently */
         }
+    };
+    // True only if this exact version of this form was already submitted.
+    // A missing entry (never submitted) or a stale version (merchant
+    // edited the form since) both correctly return false, i.e. "show it".
+    AIChatbotFormStorage.prototype.isFormUpToDate = function (formId, version) {
+        var entry = this._read()[formId];
+        return !!(entry && entry.version === version);
+    };
+    AIChatbotFormStorage.prototype.markFormSubmitted = function (formId, version) {
+        var data = this._read();
+        data[formId] = { version: version, submittedAt: new Date().toISOString() };
+        this._write(data);
     };
 
     /* ------------------------------------------------------------------
@@ -810,21 +822,24 @@
     };
 
     // Entry point for any fresh (no-conversationId) render: checks whether
-    // a pre-chat form flow needs to run first. If forms exist and haven't
-    // been submitted yet, the form flow takes over the messages area and
-    // the normal welcome/starter-questions screen is deferred until it's
-    // done. Otherwise behavior is unchanged from before forms existed.
+    // any active merchant form still needs to be shown to this visitor
+    // before the normal welcome/starter-questions screen appears. A form
+    // is "pending" if it's never been submitted, OR if the merchant has
+    // edited its name/fields since this visitor last submitted it (the
+    // server bumps `version` on that kind of edit — a plain active/
+    // inactive status toggle never does, so that alone never re-triggers
+    // this). Forms the visitor already completed at the current version
+    // are skipped, even if other forms are pending.
     AIChatbot.prototype._initializeWelcomeFlow = function () {
         var self = this;
 
-        if (this.formStorage.isSubmitted()) {
-            this._renderWelcome();
-            return;
-        }
-
         this._loadForms(function (forms) {
-            if (forms && forms.length) {
-                self._enterFormMode(forms);
+            var pendingForms = (forms || []).filter(function (form) {
+                return !self.formStorage.isFormUpToDate(form.id, form.version);
+            });
+
+            if (pendingForms.length) {
+                self._enterFormMode(pendingForms);
             } else {
                 self._renderWelcome();
             }
@@ -854,13 +869,16 @@
 
     /* ---- Pre-chat form flow -------------------------------------------
      * Shows merchant-defined form(s) at the bottom of the widget before
-     * any conversation can start. One form: just that form + "Start
-     * Conversation". Multiple forms: shown one at a time with "Next",
-     * and "Start Conversation" on the last one. Once completed, the flag
-     * persists in localStorage so the same visitor never sees it again
-     * (page reloads, "clear conversation", and later visits all skip it).
-     * No server submission yet — completing the flow just records the
-     * date/time locally.
+     * any conversation can start. Only forms this visitor hasn't
+     * completed at their current version are shown (see
+     * _initializeWelcomeFlow above for how "pending" is decided).
+     * One pending form: just that form + "Start Conversation". Multiple:
+     * shown one at a time with "Next", and "Start Conversation" on the
+     * last one. Each form's version is recorded in localStorage the
+     * moment the visitor advances past it, so a merchant editing form A
+     * while the visitor is mid-flow on form B doesn't undo B's progress.
+     * No server submission yet — advancing just records the form
+     * id/version/date locally.
      * -------------------------------------------------------------------- */
     AIChatbot.prototype._loadForms = function (callback) {
         var self = this;
@@ -887,8 +905,8 @@
             });
     };
 
-    AIChatbot.prototype._enterFormMode = function (forms) {
-        this._forms = forms;
+    AIChatbot.prototype._enterFormMode = function (pendingForms) {
+        this._forms = pendingForms;
         this._currentFormIndex = 0;
         this.root.classList.add("is-form-mode");
         this._renderCurrentForm();
@@ -963,7 +981,13 @@
             if (field.required) checkboxInput.required = true;
 
             var checkboxText = document.createElement("span");
-            checkboxText.textContent = field.label;
+            checkboxText.appendChild(document.createTextNode(field.label));
+            if (field.required) {
+                var checkboxRequiredMark = document.createElement("span");
+                checkboxRequiredMark.className = "ai-chatbot__form-required";
+                checkboxRequiredMark.textContent = " *";
+                checkboxText.appendChild(checkboxRequiredMark);
+            }
 
             checkboxLabel.appendChild(checkboxInput);
             checkboxLabel.appendChild(checkboxText);
@@ -1034,6 +1058,14 @@
     };
 
     AIChatbot.prototype._handleFormAdvance = function () {
+        var form = this._forms[this._currentFormIndex];
+
+        // Record this form as done at its current version the moment the
+        // visitor advances past it — not only once the whole flow ends —
+        // so progress on earlier forms in the queue survives even if the
+        // visitor closes the widget partway through a multi-form flow.
+        this.formStorage.markFormSubmitted(form.id, form.version);
+
         var isLast = this._currentFormIndex === this._forms.length - 1;
         if (!isLast) {
             this._currentFormIndex += 1;
@@ -1043,12 +1075,11 @@
         this._completeFormFlow();
     };
 
-    // No backend submission logic exists yet — just record that the flow
-    // was completed (and when) locally, then hand off to the normal
-    // welcome screen with all the usual chrome (input, clear, expand)
-    // restored.
+    // No backend submission logic exists yet — per-form completion is
+    // recorded in _handleFormAdvance above. This just tears down form
+    // mode and hands off to the normal welcome screen with all the usual
+    // chrome (input, clear, expand) restored.
     AIChatbot.prototype._completeFormFlow = function () {
-        this.formStorage.markSubmitted();
         this.root.classList.remove("is-form-mode");
         this.messagesEl.innerHTML = "";
         this._renderWelcome();
