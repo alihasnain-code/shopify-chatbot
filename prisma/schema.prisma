@@ -34,6 +34,7 @@ model form {
   name      String
   status    String   @default("active")
   fields    String   @db.LongText
+  version   Int      @default(1)
   position  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

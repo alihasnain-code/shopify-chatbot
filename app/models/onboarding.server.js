@@ -7,7 +7,7 @@ const DEFAULT_STARTER_QUESTIONS = [
     "How do I complete my purchase?",
 ];
 
-const DEFAULT_FORM_NAME = "Lead Capture Form";
+const DEFAULT_FORM_NAME = "Introduce yourself";
 
 const DEFAULT_FORM_FIELDS = [
     {

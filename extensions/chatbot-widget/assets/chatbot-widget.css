@@ -1111,7 +1111,7 @@
 /* Anchored to the bottom of the widget (not centered, unlike the empty
    state) since forms need to read top-to-bottom like a normal form. */
 .ai-chatbot__form-wrap {
-    margin-top: auto;
+    margin: auto 0;
     width: 100%;
 }
 
@@ -1214,4 +1214,8 @@ select.ai-chatbot__form-input {
 
 .ai-chatbot__form-submit-btn:active {
     transform: scale(0.96);
+}
+
+.ai-chatbot__form-required {
+    color: #e01a2b;
 }

@@ -974,7 +974,13 @@
         var labelEl = document.createElement("label");
         labelEl.className = "ai-chatbot__form-label";
         labelEl.setAttribute("for", "ai-chatbot-field-" + field.id);
-        labelEl.textContent = field.label + (field.required ? " *" : "");
+        labelEl.appendChild(document.createTextNode(field.label));
+        if (field.required) {
+            var requiredMark = document.createElement("span");
+            requiredMark.className = "ai-chatbot__form-required";
+            requiredMark.textContent = " *";
+            labelEl.appendChild(requiredMark);
+        }
         group.appendChild(labelEl);
 
         if (field.type === "dropdown") {
