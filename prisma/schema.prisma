@@ -141,6 +141,6 @@ model form_response {
   data      String   @db.Text
   createdAt DateTime @default(now())
 
-  form    form    @relation(fields: [formId], references: [id])
-  session session @relation(fields: [sessionId], references: [id])
+  form    form    @relation(fields: [formId], references: [id], onDelete: Cascade, map: "FormResponse_formId_fkey")
+  session session @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "FormResponse_sessionId_fkey")
 }
