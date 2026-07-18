@@ -451,6 +451,106 @@
     transform: scale(0.98);
 }
 
+/* Skeleton loaders --------------------------------------------------------
+   Shown while starter questions or pre-chat forms are being fetched, so
+   the widget never sits on a blank pane during that round trip. */
+@keyframes ai-chatbot-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.ai-chatbot__skeleton-block {
+    background-image: linear-gradient(100deg,
+            var(--ai-chatbot-surface) 40%,
+            var(--ai-chatbot-surface-hover) 50%,
+            var(--ai-chatbot-surface) 60%);
+    background-size: 200% 100%;
+    animation: ai-chatbot-shimmer 1.4s ease-in-out infinite;
+    border-radius: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-chatbot__skeleton-block {
+        animation: none;
+    }
+}
+
+/* Starter-questions skeleton — mirrors .ai-chatbot__starter-questions */
+.ai-chatbot__starter-questions-skeleton {
+    align-self: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 92%;
+    animation: ai-chatbot-msg-in 0.28s var(--ai-chatbot-ease) both;
+}
+
+.ai-chatbot__skeleton-chip {
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid var(--ai-chatbot-border);
+}
+
+.ai-chatbot__skeleton-chip:nth-child(1) {
+    width: 78%;
+}
+
+.ai-chatbot__skeleton-chip:nth-child(2) {
+    width: 92%;
+}
+
+.ai-chatbot__skeleton-chip:nth-child(3) {
+    width: 60%;
+}
+
+/* Pre-chat form skeleton — mirrors .ai-chatbot__dynamic-form */
+.ai-chatbot__form-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid var(--ai-chatbot-border);
+    border-radius: 14px;
+    background: var(--ai-chatbot-bg);
+    width: 100%;
+    animation: ai-chatbot-msg-in 0.28s var(--ai-chatbot-ease) both;
+}
+
+.ai-chatbot__skeleton-title {
+    height: 16px;
+    width: 55%;
+}
+
+.ai-chatbot__skeleton-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ai-chatbot__skeleton-field-label {
+    height: 11px;
+    width: 35%;
+}
+
+.ai-chatbot__skeleton-field-input {
+    height: 36px;
+    width: 100%;
+    border-radius: 10px;
+}
+
+.ai-chatbot__skeleton-btn {
+    height: 34px;
+    width: 110px;
+    align-self: flex-end;
+    border-radius: 10px;
+}
+
 /* Typing indicator */
 .ai-chatbot__typing {
     align-self: flex-start;

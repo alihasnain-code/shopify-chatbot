@@ -77,7 +77,9 @@ export const loader = async ({ request, params }) => {
 
     return {
         formName: form.name,
-        fields: fields.map((field) => ({ id: field.id, label: field.label })),
+        fields: fields
+            .filter((field) => field.type !== "checkbox")
+            .map((field) => ({ id: field.id, label: field.label })),
         rows,
         currentPage: page,
         totalCount,
