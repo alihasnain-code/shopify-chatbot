@@ -73,6 +73,7 @@ function SortableFormRow({
     row,
     index,
     onEdit,
+    onView,
     onReorder,
     onRequestDelete,
 }) {
@@ -156,6 +157,12 @@ function SortableFormRow({
                     ></s-button>
                     <s-button
                         variant="tertiary"
+                        icon="view"
+                        accessibilityLabel={`View form submissions ${row.id}`}
+                        onClick={() => onView(row.id)}
+                    ></s-button>
+                    <s-button
+                        variant="tertiary"
                         tone="critical"
                         icon="delete"
                         accessibilityLabel={`Delete form ${row.id}`}
@@ -187,6 +194,10 @@ export default function Index() {
 
     const handleEdit = (id) => {
         navigate(`/app/edit-form/${id}`);
+    };
+
+    const handleView = (id) => {
+        navigate(`/app/form-data/${id}`);
     };
 
     const handleRequestDelete = (id, name) => {
@@ -260,6 +271,7 @@ export default function Index() {
                                     row={row}
                                     index={index}
                                     onEdit={handleEdit}
+                                    onView={handleView}
                                     onReorder={handleReorder}
                                     onRequestDelete={handleRequestDelete}
                                 />
