@@ -1219,3 +1219,18 @@ select.ai-chatbot__form-input {
 .ai-chatbot__form-required {
     color: #e01a2b;
 }
+
+.ai-chatbot__form-submit-btn:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
+.ai-chatbot__form-submit-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: var(--ai-chatbot-bg);
+    animation: ai-chatbot-spin 0.8s linear infinite;
+}

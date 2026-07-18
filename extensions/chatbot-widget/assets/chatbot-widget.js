@@ -166,6 +166,18 @@
         });
     };
 
+    AIChatbotAPI.prototype.submitForm = function (formId, data) {
+        var url = this.apiBase + "/forms/" + encodeURIComponent(this.shop) + "/submit";
+        return fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ formId: formId, data: data }),
+        }).then(function (res) {
+            if (!res.ok) throw new Error("Failed to submit form");
+            return res.json();
+        });
+    };
+
     AIChatbotAPI.prototype.addToCart = function (payload) {
         return fetch(this.apiBase + "/cart/add", {
             method: "POST",
@@ -959,7 +971,7 @@
             if (typeof formEl.reportValidity === "function" && !formEl.reportValidity()) {
                 return;
             }
-            self._handleFormAdvance();
+            self._handleFormAdvance(form, formEl, actionBtn);
         });
 
         wrap.appendChild(formEl);
@@ -1057,8 +1069,18 @@
         return group;
     };
 
-    AIChatbot.prototype._handleFormAdvance = function () {
-        var form = this._forms[this._currentFormIndex];
+    AIChatbot.prototype._collectFormData = function (form, formEl) {
+        var data = {};
+        (form.fields || []).forEach(function (field) {
+            var el = formEl.querySelector('[name="' + field.id + '"]');
+            if (!el) return;
+            data[field.id] = field.type === "checkbox" ? el.checked : el.value;
+        });
+        return data;
+    };
+
+    AIChatbot.prototype._handleFormAdvance = function (form, formEl, actionBtn) {
+        var self = this;
 
         // Record this form as done at its current version the moment the
         // visitor advances past it — not only once the whole flow ends —
@@ -1066,13 +1088,27 @@
         // visitor closes the widget partway through a multi-form flow.
         this.formStorage.markFormSubmitted(form.id, form.version);
 
-        var isLast = this._currentFormIndex === this._forms.length - 1;
-        if (!isLast) {
-            this._currentFormIndex += 1;
-            this._renderCurrentForm();
-            return;
+        var data = this._collectFormData(form, formEl);
+
+        actionBtn.disabled = true;
+        actionBtn.innerHTML = '<span class="ai-chatbot__form-submit-spinner" aria-hidden="true"></span>';
+
+        function proceed() {
+            var isLast = self._currentFormIndex === self._forms.length - 1;
+            if (!isLast) {
+                self._currentFormIndex += 1;
+                self._renderCurrentForm();
+                return;
+            }
+            self._completeFormFlow();
         }
-        this._completeFormFlow();
+
+        this.api
+            .submitForm(form.id, data)
+            .catch(function () {
+                // Submission failed — silently move on, no error shown to the visitor.
+            })
+            .finally(proceed);
     };
 
     // No backend submission logic exists yet — per-form completion is
