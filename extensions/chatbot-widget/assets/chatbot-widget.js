@@ -1074,7 +1074,10 @@
         (form.fields || []).forEach(function (field) {
             var el = formEl.querySelector('[name="' + field.id + '"]');
             if (!el) return;
-            data[field.id] = field.type === "checkbox" ? el.checked : el.value;
+            data[field.id] = {
+                label: field.label,
+                value: field.type === "checkbox" ? el.checked : el.value,
+            };
         });
         return data;
     };
