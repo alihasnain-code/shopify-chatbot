@@ -107,9 +107,26 @@ export const action = async ({ request, params }) => {
         return { errors };
     }
 
+    const existingForm = await db.form.findFirst({
+        where: { id: formId, sessionId: session.id },
+        select: { name: true, fields: true, version: true },
+    });
+
+    if (!existingForm) {
+        throw new Response("Form not found", { status: 404 });
+    }
+
+    const contentChanged =
+        existingForm.name !== name || existingForm.fields !== JSON.stringify(fields);
+
     const result = await db.form.updateMany({
         where: { id: formId, sessionId: session.id },
-        data: { name, status, fields: JSON.stringify(fields) },
+        data: {
+            name,
+            status,
+            fields: JSON.stringify(fields),
+            version: contentChanged ? { increment: 1 } : undefined,
+        },
     });
 
     if (result.count === 0) {
