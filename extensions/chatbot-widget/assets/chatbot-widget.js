@@ -729,6 +729,7 @@
         this.isOpen = root.dataset.startOpen === "true";
         this.isExpanded = false;
         this.isBusy = false;
+        this.isCapped = false;
         this.welcomeMessage = root.dataset.welcomeMessage || "Hi there! How can I help you today?";
 
         this._bind();
@@ -845,11 +846,7 @@
     AIChatbot.prototype._initializeWelcomeFlow = function () {
         var self = this;
 
-        var skeleton = this._renderFormSkeleton();
-
         this._loadForms(function (forms) {
-            if (skeleton && skeleton.parentNode) skeleton.remove();
-
             var pendingForms = (forms || []).filter(function (form) {
                 return !self.formStorage.isFormUpToDate(form.id, form.version);
             });
@@ -860,44 +857,6 @@
                 self._renderWelcome();
             }
         });
-    };
-
-    // Shown the instant we start checking for pending pre-chat forms, since
-    // that check requires a network round trip and we don't yet know
-    // whether a form or the plain welcome screen will follow.
-    AIChatbot.prototype._renderFormSkeleton = function () {
-        var wrap = document.createElement("div");
-        wrap.className = "ai-chatbot__form-wrap";
-
-        var skel = document.createElement("div");
-        skel.className = "ai-chatbot__form-skeleton";
-
-        var title = document.createElement("div");
-        title.className = "ai-chatbot__skeleton-block ai-chatbot__skeleton-title";
-        skel.appendChild(title);
-
-        for (var i = 0; i < 2; i++) {
-            var field = document.createElement("div");
-            field.className = "ai-chatbot__skeleton-field";
-
-            var label = document.createElement("div");
-            label.className = "ai-chatbot__skeleton-block ai-chatbot__skeleton-field-label";
-            field.appendChild(label);
-
-            var input = document.createElement("div");
-            input.className = "ai-chatbot__skeleton-block ai-chatbot__skeleton-field-input";
-            field.appendChild(input);
-
-            skel.appendChild(field);
-        }
-
-        var btn = document.createElement("div");
-        btn.className = "ai-chatbot__skeleton-block ai-chatbot__skeleton-btn";
-        skel.appendChild(btn);
-
-        wrap.appendChild(skel);
-        this.messagesEl.appendChild(wrap);
-        return wrap;
     };
 
     AIChatbot.prototype._renderEmptyState = function () {
@@ -1181,7 +1140,7 @@
         }
 
         var requestId = ++this._starterQuestionsRequestId;
-        var placeholder = this._renderStarterQuestionsSkeleton();
+        var placeholder = this._renderEmptyState();
 
         this.api
             .fetchStarterQuestions()
@@ -1190,35 +1149,14 @@
                 var questions = (payload && payload.data) || [];
                 self._starterQuestionsFetched = true;
                 self._starterQuestionsCache = questions;
-                if (placeholder && placeholder.parentNode) placeholder.remove();
                 if (questions.length) {
+                    if (placeholder && placeholder.parentNode) placeholder.remove();
                     self._renderStarterQuestions(questions);
-                } else {
-                    self._renderEmptyState();
                 }
             })
             .catch(function () {
-                if (requestId !== self._starterQuestionsRequestId) return;
-                if (placeholder && placeholder.parentNode) placeholder.remove();
-                self._renderEmptyState();
                 /* fetch failed — don't mark as fetched, so next attempt retries */
             });
-    };
-
-    // Shown while starter questions are in flight — three chip-shaped
-    // placeholders standing in for the eventual question buttons.
-    AIChatbot.prototype._renderStarterQuestionsSkeleton = function () {
-        var wrap = document.createElement("div");
-        wrap.className = "ai-chatbot__starter-questions-skeleton";
-
-        for (var i = 0; i < 3; i++) {
-            var chip = document.createElement("div");
-            chip.className = "ai-chatbot__skeleton-block ai-chatbot__skeleton-chip";
-            wrap.appendChild(chip);
-        }
-
-        this.messagesEl.appendChild(wrap);
-        return wrap;
     };
 
     AIChatbot.prototype._renderStarterQuestions = function (questions) {
@@ -1335,6 +1273,8 @@
         if (!this.conversationId && !this.messagesEl.children.length) return;
         this.storage.clearConversationId();
         this.conversationId = null;
+        this.isCapped = false;
+        this.input.disabled = false;
         this.messagesEl.innerHTML = "";
         this._initializeWelcomeFlow();
     };
@@ -1360,7 +1300,7 @@
 
     AIChatbot.prototype._handleSend = function () {
         var text = this.input.value.trim();
-        if (!text || this.isBusy) return;
+        if (!text || this.isBusy || this.isCapped) return;
 
         // A real conversation is starting now — the "Start Conversation"
         // fallback (and/or any leftover starter-question chips) no longer
@@ -1447,6 +1387,16 @@
                             ensureBubble().textContent =
                                 accumulatedText || evt.error || "Something went wrong. Please try again.";
                             break;
+                        case "limit_reached":
+                            if (statusEl) {
+                                statusEl.remove();
+                                statusEl = null;
+                            }
+                            ensureBubble().textContent = evt.error || "This conversation has reached its message limit.";
+                            self.isCapped = true;
+                            self.input.disabled = true;
+                            self.sendBtn.disabled = true;
+                            break;
                         case "end_turn":
                             if (statusEl) {
                                 statusEl.remove();
@@ -1467,7 +1417,9 @@
             })
             .finally(function () {
                 self.isBusy = false;
-                self.sendBtn.disabled = self.input.value.trim().length === 0;
+                if (!self.isCapped) {
+                    self.sendBtn.disabled = self.input.value.trim().length === 0;
+                }
                 self._scrollToBottom();
             });
     };
