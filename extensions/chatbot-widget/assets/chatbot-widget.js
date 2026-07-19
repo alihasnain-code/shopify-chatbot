@@ -845,8 +845,10 @@
     // are skipped, even if other forms are pending.
     AIChatbot.prototype._initializeWelcomeFlow = function () {
         var self = this;
+        var loader = this._renderLoader();
 
         this._loadForms(function (forms) {
+            if (loader && loader.parentNode) loader.remove();
             var pendingForms = (forms || []).filter(function (form) {
                 return !self.formStorage.isFormUpToDate(form.id, form.version);
             });
@@ -867,6 +869,14 @@
             '<span class="ai-chatbot__empty-state-text">Welcome! Type your first message below.</span>';
         this.messagesEl.appendChild(el);
         return el;
+    };
+
+    AIChatbot.prototype._renderLoader = function () {
+        var wrap = document.createElement("div");
+        wrap.className = "ai-chatbot__loader-wrap";
+        wrap.innerHTML = '<div class="ai-chatbot__loader"></div>';
+        this.messagesEl.appendChild(wrap);
+        return wrap;
     };
 
     // Removes the "Start Conversation" fallback (and/or the starter
@@ -1140,7 +1150,7 @@
         }
 
         var requestId = ++this._starterQuestionsRequestId;
-        var placeholder = this._renderEmptyState();
+        var placeholder = this._renderLoader();
 
         this.api
             .fetchStarterQuestions()
@@ -1149,13 +1159,16 @@
                 var questions = (payload && payload.data) || [];
                 self._starterQuestionsFetched = true;
                 self._starterQuestionsCache = questions;
+                if (placeholder && placeholder.parentNode) placeholder.remove();
                 if (questions.length) {
-                    if (placeholder && placeholder.parentNode) placeholder.remove();
                     self._renderStarterQuestions(questions);
+                } else {
+                    self._renderEmptyState();
                 }
             })
             .catch(function () {
-                /* fetch failed — don't mark as fetched, so next attempt retries */
+                if (placeholder && placeholder.parentNode) placeholder.remove();
+                self._renderEmptyState();
             });
     };
 
