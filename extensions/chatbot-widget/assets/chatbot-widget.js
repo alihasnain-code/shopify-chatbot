@@ -715,8 +715,8 @@
         this._forms = [];
         this._currentFormIndex = 0;
 
-        // this.shop = root.dataset.shop || window.location.hostname;
-        this.shop = "shomi-official.myshopify.com";
+        this.shop = root.dataset.shop || window.location.hostname;
+        // this.shop = "shomi-official.myshopify.com";
 
         var AI_CHATBOT_API_BASE = "/apps/ai-chatbot/api/v1";
 
