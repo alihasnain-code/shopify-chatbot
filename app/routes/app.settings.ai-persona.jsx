@@ -211,7 +211,8 @@ export default function AiPersona() {
                             <s-badge tone={badge.tone}>{badge.label}</s-badge>
                         </s-stack>
                         <s-text color="subdued">
-                            Last Synced: {settings.lastSyncedAt ? formatDate(new Date(settings.lastSyncedAt).toLocaleString()) : "Never"}
+                            {/* Last Synced: {settings.lastSyncedAt ? formatDate(new Date(settings.lastSyncedAt).toLocaleString()) : "Never"} */}
+                            Last Synced: {settings.lastSyncedAt ? formatDate(settings.lastSyncedAt) : "Never"}
                         </s-text>
                     </s-stack>
 
