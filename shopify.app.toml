@@ -7,7 +7,7 @@ embedded = true
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_orders,write_products,read_legal_policies"
+scopes = "read_orders,write_products,read_legal_policies,read_fulfillments"
 
 [app_proxy]
 url = "https://chatbot-backend.kiz.app"
