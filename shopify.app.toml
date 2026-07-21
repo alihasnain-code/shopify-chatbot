@@ -50,6 +50,26 @@ api_version = "2026-10"
   topics = [ "app/scopes_update" ]
 
   [[webhooks.subscriptions]]
+  uri = "/webhooks/orders_create"
+  topics = [ "orders/create" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/orders_updated"
+  topics = [ "orders/updated" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/orders_cancelled"
+  topics = [ "orders/cancelled" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/fulfillments_create"
+  topics = [ "fulfillments/create" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/fulfillments_update"
+  topics = [ "fulfillments/update" ]
+
+  [[webhooks.subscriptions]]
   uri = "/webhooks/privacy"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
