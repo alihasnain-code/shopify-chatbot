@@ -7,7 +7,7 @@ embedded = true
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_orders,write_products,read_legal_policies,read_fulfillments"
+scopes = "read_orders,write_products,read_legal_policies,read_fulfillments,customer_read_customers, customer_read_orders"
 
 [app_proxy]
 url = "https://chatbot-backend.kiz.app"
@@ -74,7 +74,7 @@ api_version = "2026-10"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [auth]
-redirect_urls = [ "https://chatbot.kiz.app/api/auth" ]
+redirect_urls = [ "https://chatbot.kiz.app/api/auth", "https://chatbot.kiz.app/api/v1/customer-auth/callback" ]
 
 [build]
 automatically_update_urls_on_dev = true
