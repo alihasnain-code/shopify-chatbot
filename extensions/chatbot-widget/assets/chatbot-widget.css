@@ -1269,3 +1269,47 @@ select.ai-chatbot__form-input {
         background-size: calc(100%/3) 100%, calc(100%/3) 100%, calc(100%/3) 0%;
     }
 }
+
+/* --------------------------------------------------------------------------
+   Login card (customer_auth_required — order tracking login prompt)
+   -------------------------------------------------------------------------- */
+.ai-chatbot__login-card {
+    align-self: flex-start;
+    max-width: 82%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--ai-chatbot-border);
+    border-radius: 14px;
+    background: var(--ai-chatbot-bg);
+    animation: ai-chatbot-msg-in 0.28s var(--ai-chatbot-ease) both;
+}
+
+.ai-chatbot__login-card-text {
+    font-size: 13px;
+    color: var(--ai-chatbot-text);
+}
+
+.ai-chatbot__login-card-btn {
+    align-self: flex-start;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    background: var(--ai-chatbot-accent);
+    color: var(--ai-chatbot-bg);
+    cursor: pointer;
+    transition: transform 0.15s var(--ai-chatbot-ease-fast), opacity 0.15s var(--ai-chatbot-ease-fast);
+}
+
+.ai-chatbot__login-card-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.ai-chatbot__login-card-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

@@ -795,6 +795,15 @@
                 self.close();
             }
         });
+
+        window.addEventListener("message", function (e) {
+            if (!e.data || typeof e.data.ok === "undefined") return;
+            if (e.data.ok) {
+                self._handleLoginSuccess();
+            } else {
+                self._handleLoginFailure(e.data.error);
+            }
+        });
     };
 
     /* ---- History loading -------------------------------------------- */
@@ -1392,6 +1401,14 @@
                             }
                             self._scrollToBottom();
                             break;
+                        case "customer_auth_required":
+                            if (statusEl) {
+                                statusEl.remove();
+                                statusEl = null;
+                            }
+                            turnEl.appendChild(self._buildLoginCard(evt.authUrl));
+                            self._scrollToBottom();
+                            break;
                         case "error":
                             if (statusEl) {
                                 statusEl.remove();
@@ -1447,6 +1464,58 @@
         parentEl.appendChild(status);
         this._scrollToBottom();
         return status;
+    };
+
+    /* ---- Customer login (order tracking) ------------------------------ */
+    AIChatbot.prototype._buildLoginCard = function (authUrl) {
+        var self = this;
+        var card = document.createElement("div");
+        card.className = "ai-chatbot__login-card";
+
+        var text = document.createElement("div");
+        text.className = "ai-chatbot__login-card-text";
+        text.textContent = "Please log in to view your order details.";
+
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "ai-chatbot__login-card-btn";
+        btn.textContent = "Log in with Shopify";
+
+        btn.addEventListener("click", function () {
+            btn.disabled = true;
+            btn.textContent = "Waiting for login…";
+            self._openLoginPopup(authUrl);
+        });
+
+        card.appendChild(text);
+        card.appendChild(btn);
+        return card;
+    };
+
+    AIChatbot.prototype._openLoginPopup = function (authUrl) {
+        if (this._loginPopup && !this._loginPopup.closed) {
+            this._loginPopup.focus();
+            return;
+        }
+        this._loginPopup = window.open(
+            authUrl,
+            "shopify_customer_login",
+            "width=480,height=640"
+        );
+    };
+
+    AIChatbot.prototype._handleLoginSuccess = function () {
+        if (this._loginPopup && !this._loginPopup.closed) this._loginPopup.close();
+        this._loginPopup = null;
+        if (this.isBusy) return;
+        this.input.value = "I've logged in, please check my order.";
+        this._handleSend();
+    };
+
+    AIChatbot.prototype._handleLoginFailure = function (message) {
+        if (this._loginPopup && !this._loginPopup.closed) this._loginPopup.close();
+        this._loginPopup = null;
+        this._appendBubble("bot", "Login didn't go through. Please try again.");
     };
 
     /* ---- Direct add-to-cart / buy-now (AI-skipping) -------------------- */

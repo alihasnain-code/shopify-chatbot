@@ -76,5 +76,8 @@ api_version = "2026-10"
 [auth]
 redirect_urls = [ "https://chatbot.kiz.app/api/auth", "https://chatbot-backend.kiz.app/api/v1/customer-auth/callback" ]
 
+[customer_authentication]
+redirect_uris = [ "https://chatbot-backend.kiz.app/api/v1/customer-auth/callback" ]
+
 [build]
 automatically_update_urls_on_dev = true
