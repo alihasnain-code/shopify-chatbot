@@ -21,7 +21,7 @@ model conversation {
   id        String    @id
   shop      String
   createdAt DateTime  @default(now())
-  updatedAt DateTime
+  updatedAt DateTime  @updatedAt
   cartId    String?
   message   message[]
 
@@ -46,7 +46,7 @@ model form {
 }
 
 model message {
-  id             String       @id
+  id             String       @id @default(cuid())
   conversationId String
   role           String
   content        String       @db.LongText
