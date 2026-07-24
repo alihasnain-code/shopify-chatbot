@@ -1392,6 +1392,16 @@
                             }
                             self._scrollToBottom();
                             break;
+                        case "order_verification_required":
+                            if (statusEl) {
+                                statusEl.remove();
+                                statusEl = null;
+                            }
+                            turnEl.appendChild(
+                                self._buildOrderVerifyForm(evt.orderNumber, evt.field)
+                            );
+                            self._scrollToBottom();
+                            break;
                         case "error":
                             if (statusEl) {
                                 statusEl.remove();
@@ -1447,6 +1457,147 @@
         parentEl.appendChild(status);
         this._scrollToBottom();
         return status;
+    };
+
+    /* ---- Order tracking verification form ------------------------------ */
+    AIChatbot.prototype._buildOrderVerifyForm = function (orderNumber, field) {
+        var self = this;
+        var wrap = document.createElement("div");
+        wrap.className = "ai-chatbot__form-wrap";
+
+        var formEl = document.createElement("form");
+        formEl.className = "ai-chatbot__dynamic-form";
+
+        var heading = document.createElement("h3");
+        heading.className = "ai-chatbot__form-title";
+        heading.textContent = "Verify your order";
+        formEl.appendChild(heading);
+
+        var orderGroup = document.createElement("div");
+        orderGroup.className = "ai-chatbot__form-field";
+        var orderLabel = document.createElement("label");
+        orderLabel.className = "ai-chatbot__form-label";
+        orderLabel.textContent = "Order number";
+        var orderInput = document.createElement("input");
+        orderInput.className = "ai-chatbot__form-input";
+        orderInput.type = "text";
+        orderInput.required = true;
+        orderInput.value = orderNumber || "";
+        orderGroup.appendChild(orderLabel);
+        orderGroup.appendChild(orderInput);
+        formEl.appendChild(orderGroup);
+
+        var contactGroup = document.createElement("div");
+        contactGroup.className = "ai-chatbot__form-field";
+        var contactLabel = document.createElement("label");
+        contactLabel.className = "ai-chatbot__form-label";
+        contactLabel.textContent = field === "phone" ? "Phone number" : "Email";
+        var contactInput = document.createElement("input");
+        contactInput.className = "ai-chatbot__form-input";
+        contactInput.type = field === "phone" ? "tel" : "email";
+        contactInput.required = true;
+        contactGroup.appendChild(contactLabel);
+        contactGroup.appendChild(contactInput);
+        formEl.appendChild(contactGroup);
+
+        var actions = document.createElement("div");
+        actions.className = "ai-chatbot__form-actions";
+        var submitBtn = document.createElement("button");
+        submitBtn.type = "submit";
+        submitBtn.className = "ai-chatbot__form-submit-btn";
+        submitBtn.textContent = "Track order";
+        actions.appendChild(submitBtn);
+        formEl.appendChild(actions);
+
+        var errorEl = document.createElement("div");
+        errorEl.className = "ai-chatbot__form-error";
+        errorEl.style.display = "none";
+        formEl.appendChild(errorEl);
+
+        formEl.addEventListener("submit", function (e) {
+            e.preventDefault();
+            if (!formEl.reportValidity()) return;
+
+            errorEl.style.display = "none";
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="ai-chatbot__form-submit-spinner" aria-hidden="true"></span>';
+
+            fetch(self.apiBase + "/order-tracking/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    shop: self.shop,
+                    conversationId: self.conversationId,
+                    orderNumber: orderInput.value.trim(),
+                    contact: contactInput.value.trim(),
+                }),
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    wrap.remove();
+                    var turnEl = document.createElement("div");
+                    turnEl.className = "ai-chatbot__turn";
+                    self.messagesEl.appendChild(turnEl);
+
+                    if (!data.found) {
+                        self._appendBubble("bot", data.message || "Order not found.");
+                        return;
+                    }
+                    turnEl.appendChild(self._buildOrderResultCard(data.data));
+                    self._scrollToBottom();
+                })
+                .catch(function () {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Track order";
+                    errorEl.textContent = "Something went wrong. Please try again.";
+                    errorEl.style.display = "block";
+                });
+        });
+
+        wrap.appendChild(formEl);
+        return wrap;
+    };
+
+    AIChatbot.prototype._buildOrderResultCard = function (order) {
+        var card = document.createElement("div");
+        card.className = "ai-chatbot__cart-card";
+
+        var header = document.createElement("div");
+        header.className = "ai-chatbot__cart-card-line";
+        header.style.fontWeight = "600";
+        header.textContent = "Order " + order.orderNumber + " — " + (order.status || "");
+        card.appendChild(header);
+
+        (order.items || []).forEach(function (item) {
+            var row = document.createElement("div");
+            row.className = "ai-chatbot__cart-card-line-meta";
+            row.style.padding = "4px 10px";
+            row.textContent = item;
+            card.appendChild(row);
+        });
+
+        (order.shipments || []).forEach(function (shipment) {
+            var row = document.createElement("div");
+            row.className = "ai-chatbot__cart-card-footer";
+            var text = shipment.status;
+            if (shipment.carrier) text += " · " + shipment.carrier;
+            if (shipment.trackingNumber) text += " #" + shipment.trackingNumber;
+            var span = document.createElement("div");
+            span.textContent = text;
+            row.appendChild(span);
+            if (shipment.trackingUrl) {
+                var link = document.createElement("a");
+                link.className = "ai-chatbot__cart-card-checkout";
+                link.href = shipment.trackingUrl;
+                link.target = "_blank";
+                link.rel = "noopener";
+                link.textContent = "Track";
+                row.appendChild(link);
+            }
+            card.appendChild(row);
+        });
+
+        return card;
     };
 
     /* ---- Direct add-to-cart / buy-now (AI-skipping) -------------------- */
