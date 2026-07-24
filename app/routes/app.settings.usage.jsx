@@ -5,6 +5,7 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 
 const ALLOWED_RESET_PERIODS = ["hour", "6-hour", "12-hour", "24-hour", "7-day"];
+const ALLOWED_VERIFICATION_METHODS = ["email", "phone"];
 
 export const loader = async ({ request }) => {
     const { session } = await authenticate.admin(request);
@@ -23,6 +24,7 @@ export const action = async ({ request }) => {
     const maxMessagesPerConversation = parseInt(formData.get("maxMessagesPerConversation"), 10);
     const maxMessagesPerVisitor = parseInt(formData.get("maxMessagesPerVisitor"), 10);
     const resetPeriod = formData.get("resetPeriod");
+    const verificationMethod = formData.get("verificationMethod");
 
     if (!Number.isInteger(maxMessagesPerConversation) || maxMessagesPerConversation < 1 || maxMessagesPerConversation > 200) {
         return { error: "Max messages per chat conversation must be between 1 and 200." };
@@ -36,10 +38,25 @@ export const action = async ({ request }) => {
         return { error: "Invalid reset period selected." };
     }
 
+    if (!ALLOWED_VERIFICATION_METHODS.includes(verificationMethod)) {
+        return { error: "Invalid verification method selected." };
+    }
+
     await db.usagesettings.upsert({
         where: { sessionId: session.id },
-        create: { sessionId: session.id, maxMessagesPerConversation, maxMessagesPerVisitor, resetPeriod },
-        update: { maxMessagesPerConversation, maxMessagesPerVisitor, resetPeriod },
+        create: {
+            sessionId: session.id,
+            maxMessagesPerConversation,
+            maxMessagesPerVisitor,
+            resetPeriod,
+            verificationMethod,
+        },
+        update: {
+            maxMessagesPerConversation,
+            maxMessagesPerVisitor,
+            resetPeriod,
+            verificationMethod,
+        },
     });
 
     return { success: true };
@@ -64,6 +81,7 @@ export default function Usage() {
                 maxMessagesPerConversation: String(formState.maxMessagesPerConversation),
                 maxMessagesPerVisitor: String(formState.maxMessagesPerVisitor),
                 resetPeriod: formState.resetPeriod,
+                verificationMethod: formState.verificationMethod,
             },
             { method: "post" }
         );
@@ -96,51 +114,72 @@ export default function Usage() {
                 <button disabled={isSaving} onClick={handleReset} type="button"></button>
             </ui-save-bar>
 
-            <s-section heading="Usage Controls & Anti-Abuse">
-                <s-stack direction="block" gap="small">
-                    <s-number-field
-                        autocomplete="off"
-                        value={formState.maxMessagesPerConversation}
-                        onInput={(e) => setFormState({ ...formState, maxMessagesPerConversation: e.currentTarget.value })}
-                        required
-                        min={1}
-                        max={200}
-                        details="Limits length of a single conversation thread."
-                        label="Max messages per chat conversation"
-                    ></s-number-field>
-                    <div
-                        style={{
-                            display: "grid",
-                            gap: "10px",
-                            gridTemplateColumns: "repeat(2, 1fr)",
-                        }}
-                    >
+            <s-stack direction="block" gap="small">
+                <s-section heading="Usage Controls & Anti-Abuse">
+                    <s-stack direction="block" gap="small">
                         <s-number-field
-                            required
                             autocomplete="off"
-                            value={formState.maxMessagesPerVisitor}
-                            onInput={(e) => setFormState({ ...formState, maxMessagesPerVisitor: e.currentTarget.value })}
+                            value={formState.maxMessagesPerConversation}
+                            onInput={(e) => setFormState({ ...formState, maxMessagesPerConversation: e.currentTarget.value })}
+                            required
                             min={1}
-                            max={10000}
-                            label="Max total messages per visitor"
+                            max={200}
+                            details="Limits length of a single conversation thread."
+                            label="Max messages per chat conversation"
                         ></s-number-field>
-                        <s-select
-                            label="Reset period"
-                            name="reset-period"
-                            value={formState.resetPeriod}
-                            onChange={(e) => setFormState({ ...formState, resetPeriod: e.currentTarget.value })}
+                        <div
+                            style={{
+                                display: "grid",
+                                gap: "10px",
+                                gridTemplateColumns: "repeat(2, 1fr)",
+                            }}
                         >
-                            <s-option value="hour">1 Hour</s-option>
-                            <s-option value="6-hour">6 Hour</s-option>
-                            <s-option value="12-hour">12 Hour</s-option>
-                            <s-option value="24-hour">24 Hour</s-option>
-                            <s-option value="7-day">7 Days</s-option>
-                        </s-select>
-                    </div>
+                            <s-number-field
+                                required
+                                autocomplete="off"
+                                value={formState.maxMessagesPerVisitor}
+                                onInput={(e) => setFormState({ ...formState, maxMessagesPerVisitor: e.currentTarget.value })}
+                                min={1}
+                                max={10000}
+                                label="Max total messages per visitor"
+                            ></s-number-field>
+                            <s-select
+                                label="Reset period"
+                                name="reset-period"
+                                value={formState.resetPeriod}
+                                onChange={(e) => setFormState({ ...formState, resetPeriod: e.currentTarget.value })}
+                            >
+                                <s-option value="hour">1 Hour</s-option>
+                                <s-option value="6-hour">6 Hour</s-option>
+                                <s-option value="12-hour">12 Hour</s-option>
+                                <s-option value="24-hour">24 Hour</s-option>
+                                <s-option value="7-day">7 Days</s-option>
+                            </s-select>
+                        </div>
 
-                    <s-text color="subdued">Total messages allowed across all conversations within the selected window.</s-text>
-                </s-stack>
-            </s-section>
+                        <s-text color="subdued">Total messages allowed across all conversations within the selected window.</s-text>
+                    </s-stack>
+                </s-section>
+
+                <s-section heading="Order Lookup Verification">
+                    <s-stack direction="block" gap="small">
+                        <s-select
+                            label="Verify customer using"
+                            name="verificationMethod"
+                            value={formState.verificationMethod}
+                            onChange={(e) => setFormState({ ...formState, verificationMethod: e.currentTarget.value })}
+                        >
+                            <s-option value="email">Email</s-option>
+                            <s-option value="phone">Phone</s-option>
+                        </s-select>
+
+                        <s-text color="subdued">
+                            Field used to confirm the customer's identity before revealing order details.
+                        </s-text>
+                    </s-stack>
+                </s-section>
+            </s-stack>
+
         </form>
     );
 }

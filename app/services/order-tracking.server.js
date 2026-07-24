@@ -10,8 +10,30 @@ async function getSessionIdForShop(shop) {
     return session?.id ?? null
 }
 
-// Only the fields the tracking bot ever needs — no full address, no phone,
-// no customer object, no payment/discount internals.
+// Root fields first (contact_email/email is what the buyer actually typed
+// at checkout for THIS order), customer.email as a fallback only — the
+// customer object reflects their CURRENT profile, which can drift from
+// what was true when this specific order was placed.
+function extractEmail(payload) {
+    if (payload.contact_email) return { value: payload.contact_email, source: 'root' }
+    if (payload.email) return { value: payload.email, source: 'root' }
+    if (payload.customer?.email) return { value: payload.customer.email, source: 'customer' }
+    return { value: null, source: null }
+}
+
+// Same priority logic for phone — root contact phone first, since that's
+// what was entered for this order specifically. shipping/billing address
+// phone is last resort (could belong to a gift recipient, not the buyer).
+function extractPhone(payload) {
+    if (payload.phone) return { value: payload.phone, source: 'root' }
+    if (payload.customer?.phone) return { value: payload.customer.phone, source: 'customer' }
+    if (payload.shipping_address?.phone) return { value: payload.shipping_address.phone, source: 'shipping_address' }
+    if (payload.billing_address?.phone) return { value: payload.billing_address.phone, source: 'billing_address' }
+    return { value: null, source: null }
+}
+
+// Only the fields the tracking bot ever needs — no full address, no
+// customer object, no payment/discount internals.
 function extractLineItems(lineItems = []) {
     return lineItems.map((li) => ({
         title: li.title,
@@ -20,8 +42,8 @@ function extractLineItems(lineItems = []) {
     }))
 }
 
-// City/province/country only — never street address or phone, even though
-// the webhook payload includes them.
+// City/province/country only — never street address, even though the
+// webhook payload includes it.
 function extractAddress(address) {
     if (!address) return { city: null, province: null, country: null }
     return {
@@ -47,6 +69,13 @@ export async function upsertOrderFromWebhook(shop, payload) {
 
     const { city, province, country } = extractAddress(payload.shipping_address)
 
+    // Both are always extracted and stored, tagged with where each came
+    // from. Which one is USED for verification is decided later, at
+    // lookup time, based on the shop's current verificationMethod setting
+    // — so switching that setting never requires re-extracting anything.
+    const email = extractEmail(payload)
+    const phone = extractPhone(payload)
+
     await db.order.upsert({
         where: { shopifyOrderId: String(payload.id) },
         create: {
@@ -54,7 +83,10 @@ export async function upsertOrderFromWebhook(shop, payload) {
             shopifyOrderId: String(payload.id),
             orderNumber: payload.order_number,
             orderName: payload.name,
-            email: payload.contact_email || payload.email || null,
+            email: email.value,
+            emailSource: email.source,
+            phone: phone.value,
+            phoneSource: phone.source,
             financialStatus: payload.financial_status || null,
             fulfillmentStatus: payload.fulfillment_status || null,
             currency: payload.currency || null,
@@ -68,6 +100,10 @@ export async function upsertOrderFromWebhook(shop, payload) {
             shopifyCreatedAt: new Date(payload.created_at),
         },
         update: {
+            email: email.value,
+            emailSource: email.source,
+            phone: phone.value,
+            phoneSource: phone.source,
             financialStatus: payload.financial_status || null,
             fulfillmentStatus: payload.fulfillment_status || null,
             totalPrice: payload.current_total_price || payload.total_price || null,
