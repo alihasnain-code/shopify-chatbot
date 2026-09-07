@@ -25,6 +25,8 @@ export const action = async ({ request }) => {
     const maxMessagesPerVisitor = parseInt(formData.get("maxMessagesPerVisitor"), 10);
     const resetPeriod = formData.get("resetPeriod");
     const verificationMethod = formData.get("verificationMethod");
+    const limitReachedMessageRaw = formData.get("limitReachedMessage");
+    const limitReachedMessage = limitReachedMessageRaw?.trim() ? limitReachedMessageRaw.trim() : null;
 
     if (!Number.isInteger(maxMessagesPerConversation) || maxMessagesPerConversation < 1 || maxMessagesPerConversation > 200) {
         return { error: "Max messages per chat conversation must be between 1 and 200." };
@@ -42,6 +44,10 @@ export const action = async ({ request }) => {
         return { error: "Invalid verification method selected." };
     }
 
+    if (limitReachedMessage && limitReachedMessage.length > 300) {
+        return { error: "Limit-reached message must be 300 characters or fewer." };
+    }
+
     await db.usagesettings.upsert({
         where: { sessionId: session.id },
         create: {
@@ -50,12 +56,14 @@ export const action = async ({ request }) => {
             maxMessagesPerVisitor,
             resetPeriod,
             verificationMethod,
+            limitReachedMessage,
         },
         update: {
             maxMessagesPerConversation,
             maxMessagesPerVisitor,
             resetPeriod,
             verificationMethod,
+            limitReachedMessage,
         },
     });
 
@@ -82,6 +90,7 @@ export default function Usage() {
                 maxMessagesPerVisitor: String(formState.maxMessagesPerVisitor),
                 resetPeriod: formState.resetPeriod,
                 verificationMethod: formState.verificationMethod,
+                limitReachedMessage: formState.limitReachedMessage ?? "",
             },
             { method: "post" }
         );
@@ -156,6 +165,15 @@ export default function Usage() {
                                 <s-option value="7-day">7 Days</s-option>
                             </s-select>
                         </div>
+
+                        <s-text-field
+                            label="Custom limit message"
+                            details="Optional. Shown to customers when the message limit is reached."
+                            maxLength="300"
+                            minLength="0"
+                            value={formState.limitReachedMessage ?? ""}
+                            onInput={(e) => setFormState({ ...formState, limitReachedMessage: e.currentTarget.value })}
+                        ></s-text-field>
 
                         <s-text color="subdued">Total messages allowed across all conversations within the selected window.</s-text>
                     </s-stack>

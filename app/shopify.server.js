@@ -8,6 +8,20 @@ import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prism
 import prisma from "./db.server";
 import { ensureDefaultShopSettings } from "./models/onboarding.server";
 import { policySyncQueue } from "./queue";
+import { BILLING_CONFIG } from "./billing"
+
+async function assignDefaultPlanIfNeeded(session) {
+  const dbSession = await prisma.session.findUnique({ where: { id: session.id } });
+  if (dbSession?.planId) return; // already has a plan, don't touch it (e.g. re-auth)
+
+  const freePlan = await prisma.plan.findFirst({ where: { onInstall: true } });
+  if (!freePlan) return;
+
+  await prisma.session.update({
+    where: { id: session.id },
+    data: { planId: freePlan.id },
+  });
+}
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -17,6 +31,7 @@ const shopify = shopifyApp({
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
+  billing: { ...BILLING_CONFIG },
   distribution: AppDistribution.AppStore,
   future: {
     expiringOfflineAccessTokens: true,
@@ -24,6 +39,8 @@ const shopify = shopifyApp({
   hooks: {
     afterAuth: async ({ session }) => {
       await shopify.registerWebhooks({ session });
+
+      await assignDefaultPlanIfNeeded(session);
 
       // 1. Seed default AI persona / starter questions / usage settings for this session
       await ensureDefaultShopSettings(session.id);
