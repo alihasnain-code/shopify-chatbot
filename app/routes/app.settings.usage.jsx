@@ -143,27 +143,29 @@ export default function Usage() {
                                 gridTemplateColumns: "repeat(2, 1fr)",
                             }}
                         >
-                            <s-number-field
-                                required
-                                autocomplete="off"
-                                value={formState.maxMessagesPerVisitor}
-                                onInput={(e) => setFormState({ ...formState, maxMessagesPerVisitor: e.currentTarget.value })}
-                                min={1}
-                                max={10000}
-                                label="Max total messages per visitor"
-                            ></s-number-field>
-                            <s-select
-                                label="Reset period"
-                                name="reset-period"
-                                value={formState.resetPeriod}
-                                onChange={(e) => setFormState({ ...formState, resetPeriod: e.currentTarget.value })}
-                            >
-                                <s-option value="hour">1 Hour</s-option>
-                                <s-option value="6-hour">6 Hour</s-option>
-                                <s-option value="12-hour">12 Hour</s-option>
-                                <s-option value="24-hour">24 Hour</s-option>
-                                <s-option value="7-day">7 Days</s-option>
-                            </s-select>
+                            <div style={{ display: "none" }}>
+                                <s-number-field
+                                    required
+                                    autocomplete="off"
+                                    value={formState.maxMessagesPerVisitor}
+                                    onInput={(e) => setFormState({ ...formState, maxMessagesPerVisitor: e.currentTarget.value })}
+                                    min={1}
+                                    max={10000}
+                                    label="Max total messages per visitor"
+                                ></s-number-field>
+                                <s-select
+                                    label="Reset period"
+                                    name="reset-period"
+                                    value={formState.resetPeriod}
+                                    onChange={(e) => setFormState({ ...formState, resetPeriod: e.currentTarget.value })}
+                                >
+                                    <s-option value="hour">1 Hour</s-option>
+                                    <s-option value="6-hour">6 Hour</s-option>
+                                    <s-option value="12-hour">12 Hour</s-option>
+                                    <s-option value="24-hour">24 Hour</s-option>
+                                    <s-option value="7-day">7 Days</s-option>
+                                </s-select>
+                            </div>
                         </div>
 
                         <s-text-field
