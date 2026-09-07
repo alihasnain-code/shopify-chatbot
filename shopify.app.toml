@@ -1,6 +1,6 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "7347c7812963a7d32be35d9f4f944552"
+client_id = "8fc4998e030dd505b2733c9772bafa75"
 name = "Assistify"
 application_url = "https://chatbot.kiz.app"
 embedded = true

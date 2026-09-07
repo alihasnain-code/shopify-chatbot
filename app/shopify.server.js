@@ -7,7 +7,6 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 import { ensureDefaultShopSettings } from "./models/onboarding.server";
-import { policySyncQueue } from "./queue";
 import { BILLING_CONFIG } from "./billing"
 
 async function assignDefaultPlanIfNeeded(session) {
@@ -44,23 +43,6 @@ const shopify = shopifyApp({
 
       // 1. Seed default AI persona / starter questions / usage settings for this session
       await ensureDefaultShopSettings(session.id);
-
-      // 2. Dispatch background job to fetch, chunk, embed, and store policies
-      await policySyncQueue.add(
-        "sync-store-policies",
-        { shop: session.shop },
-        {
-          attempts: 3,
-          backoff: {
-            type: "exponential",
-            delay: 5000,
-          },
-          removeOnComplete: true,
-          removeOnFail: false,
-        }
-      );
-
-      console.log(`[BullMQ] Enqueued policy sync for: ${session.shop}`);
     }
   },
   ...(process.env.SHOP_CUSTOM_DOMAIN
